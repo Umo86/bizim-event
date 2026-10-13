@@ -83,6 +83,32 @@ tests/unit, tests/integration
 8. **Schema change** → edit `src/db/schema`, run `pnpm db:generate`, commit the SQL. CI fails if they drift.
    `geography(Point,4326)` is exposed as the `geo_point` domain because drizzle-kit quotes custom type names.
 9. **Copy Tagvenue's layout patterns only** — never its logo, wording, colours or images.
+10. **Raw SQL subqueries**: reference outer columns with `qualified(table, column)` from `@/db/sql`. Drizzle drops the
+    table name in single-table selects, so `${listings.id}` inside `(select … from listing_media m …)` silently binds to
+    `m.id`.
+11. **Classes**: extra classes go through `buttonVariants({ …, className })` / `cn()` (tailwind-merge). Never
+    concatenate class strings onto a variant — `inline-flex` vs `hidden` then depends on stylesheet order.
+12. **Admin checks**: the session role comes from Better Auth's 5-minute cookie cache; `requireAdmin` re-reads the role
+    from the database. Don't gate anything sensitive on `ctx.user.role` alone.
+13. **Unanswered ≠ no**: optional facts a business hasn't answered are `null` (e.g. `venue_details.alcohol`), never a
+    default that claims something.
+
+### Onboarding & listings (Phase 2)
+
+- Wizard: `/[locale]/business/[id]/setup/[step]` (info → location → currency → listing → photos → pricing → event-types
+  → details → cancellation → review). Forms autosave per field (`useAutosave`, 1 s debounce); the server keeps the valid
+  fields and reports invalid ones (`pickValidFields`), "Save and continue" validates the step strictly.
+- Review flow: `draft → pending_review → approved | changes_requested | rejected`; approval starts the 90-day trial.
+  Edits to approved listings stay live; a new listing on an approved business is reviewed on its own.
+- Completeness (`src/lib/completeness.ts`) drives the progress bar and the submit gate (venues need 5 photos, others 3).
+- Uploads: the browser resizes to WebP 400/1200/2000 (EXIF/GPS dropped) → presigned PUT to R2 (`pnpm r2:cors` once) →
+  the server HEAD-checks and registers the media. Without R2, development uses `/api/dev-upload` (`.dev-uploads/`);
+  production refuses uploads until R2 is configured.
+- Addresses: Google Places (New) when `GOOGLE_PLACES_API_KEY` is set, otherwise Photon (OpenStreetMap); manual entry
+  always works. Show the provider's attribution under suggestions. Cities are created on demand (deduped by place id,
+  then country + English slug); currency and time zone are prefilled from the address.
+- Testimonials on "List your business" come from `src/content/testimonials.ts` and stay hidden until there are real
+  quotes — never invent them.
 
 ## Data model (summary)
 
@@ -104,6 +130,8 @@ pnpm dev | build | lint | typecheck | test
 pnpm db:generate     # SQL migration from schema changes
 pnpm db:migrate      # apply migrations (uses DATABASE_URL_UNPOOLED)
 pnpm db:seed         # countries, taxonomies, demo cities/businesses/listings/bookings, admin user
+pnpm r2:cors         # one-off: allow browser uploads to the R2 bucket from the app's origin
+pnpm format          # Prettier (printWidth 120)
 ```
 
 Integration tests need `TEST_DATABASE_URL` pointing at Postgres with PostGIS (CI uses `postgis/postgis:16-3.4`);
@@ -116,7 +144,9 @@ they are skipped when it's unset.
       CLAUDE.md, .env.example, CI, vercel.json daily cron.
 - [x] **Phase 1 — Data & geography:** full schema, migrations, extensions, indexes, DAL + guards + authorisation tests,
       all countries, lookup tables, seed script.
-- [ ] Phase 2 — Business onboarding & listings (wizard, Places, R2 uploads, listing editor, approval queue)
+- [x] **Phase 2 — Business onboarding & listings:** "List your business" page, 10-step wizard for venues, caterers and
+      performers (worldwide address, currency, time zone), Places/Photon address search, browser-resized R2 uploads,
+      listing editor, admin approval queue with request-changes/reject, notification emails.
 - [ ] Phase 3 — Subscriptions (Stripe Checkout/Portal, webhooks, trial reminders, grace, admin tools, Pricing page)
 - [ ] Phase 4 — Discovery (homepage, PostGIS search + filters, FX hints, MapLibre, detail pages, shortlist, compare)
 - [ ] Phase 5 — Enquiries, chat & bookings (event plans, Pusher chat, viewings, offers, requests, calendars, iCal)

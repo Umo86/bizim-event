@@ -19,7 +19,7 @@ config({ path: ".env.local" });
 config();
 
 import { hashPassword } from "better-auth/crypto";
-import { eq, sql } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import type { DB } from "../src/db";
@@ -32,13 +32,18 @@ import {
   DEMO_MARKETS,
   EVENT_TYPES,
   LANGUAGES,
+  RETIRED_AMENITY_KEYS,
   SEED_CITIES,
   SERVICE_STYLES,
   VENUE_TYPES,
 } from "../src/db/seed-data/taxonomy";
 import { allCountries } from "../src/lib/countries-data";
 import { slugify } from "../src/lib/slug";
-import { refreshBusinessVisibility, refreshCityCounts, refreshCountryVisibility } from "../src/server/internal/visibility";
+import {
+  refreshBusinessVisibility,
+  refreshCityCounts,
+  refreshCountryVisibility,
+} from "../src/server/internal/visibility";
 
 const args = new Set(process.argv.slice(2));
 const RESET = args.has("--reset");
@@ -111,7 +116,10 @@ async function seedReference(db: DB) {
         isTurkishCultural: cultural,
         appliesTo: appliesTo ?? ["venue", "caterer", "performer"],
       })
-      .onConflictDoUpdate({ target: s.eventTypes.key, set: { labelTr: tr, labelEn: en, sortOrder: i, isTurkishCultural: cultural } });
+      .onConflictDoUpdate({
+        target: s.eventTypes.key,
+        set: { labelTr: tr, labelEn: en, sortOrder: i, isTurkishCultural: cultural },
+      });
   }
   await upsertLookup(db, s.venueTypes, VENUE_TYPES);
   await upsertLookup(db, s.actTypes, ACT_TYPES);
@@ -121,9 +129,23 @@ async function seedReference(db: DB) {
   for (const [i, [key, tr, en, group, appliesTo]] of AMENITIES.entries()) {
     await db
       .insert(s.amenities)
-      .values({ key, labelTr: tr, labelEn: en, slugTr: slugify(tr), slugEn: slugify(en), sortOrder: i, group, appliesTo })
-      .onConflictDoUpdate({ target: s.amenities.key, set: { labelTr: tr, labelEn: en, group, appliesTo, sortOrder: i } });
+      .values({
+        key,
+        labelTr: tr,
+        labelEn: en,
+        slugTr: slugify(tr),
+        slugEn: slugify(en),
+        sortOrder: i,
+        group,
+        appliesTo,
+      })
+      .onConflictDoUpdate({
+        target: s.amenities.key,
+        set: { labelTr: tr, labelEn: en, group, appliesTo, sortOrder: i },
+      });
   }
+  // Amenities replaced by structured venue fields (see RETIRED_AMENITY_KEYS).
+  await db.delete(s.amenities).where(inArray(s.amenities.key, [...RETIRED_AMENITY_KEYS]));
   for (const p of CANCELLATION_POLICIES) {
     const [existing] = await db
       .select({ id: s.cancellationPolicies.id })
@@ -194,12 +216,18 @@ async function unsplashSearch(key: string, query: string, perPage = 10): Promise
     );
     if (!res.ok) return [];
     const json = (await res.json()) as {
-      results: { urls: { raw: string }; user: { name: string; links: { html: string } }; links: { download_location: string } }[];
+      results: {
+        urls: { raw: string };
+        user: { name: string; links: { html: string } };
+        links: { download_location: string };
+      }[];
     };
     return Promise.all(
       json.results.map(async (r) => {
         // Unsplash guideline: trigger the download endpoint when a photo is selected.
-        await fetch(r.links.download_location, { headers: { Authorization: `Client-ID ${key}` } }).catch(() => undefined);
+        await fetch(r.links.download_location, { headers: { Authorization: `Client-ID ${key}` } }).catch(
+          () => undefined,
+        );
         const raw = r.urls.raw;
         return {
           tile: `${raw}&w=800&h=1000&fit=crop&auto=format&q=70`,
@@ -222,11 +250,28 @@ async function unsplashPhoto(key: string, query: string) {
 // ── Demo data ───────────────────────────────────────────────────────────────
 
 const VENUE_NAMES = [
-  ["Saray", "Palace"], ["Lale Bahçesi", "Tulip Garden"], ["Boğaziçi", "Bosphorus"], ["Yıldız", "Star"],
-  ["Çınar", "Plane Tree"], ["Mavi Köşk", "Blue Mansion"], ["Gül Konağı", "Rose House"], ["Ay Işığı", "Moonlight"],
-  ["Hilal", "Crescent"], ["Defne", "Laurel"], ["Ihlamur", "Linden"], ["Sedef", "Pearl"], ["Kristal", "Crystal"],
-  ["Elmas", "Diamond"], ["Zümrüt", "Emerald"], ["Nergis", "Narcissus"], ["Papatya", "Daisy"], ["Selvi", "Cypress"],
-  ["Şahane", "Splendid"], ["Lüks", "Luxe"], ["Anka", "Phoenix"], ["Sultan", "Sultan"],
+  ["Saray", "Palace"],
+  ["Lale Bahçesi", "Tulip Garden"],
+  ["Boğaziçi", "Bosphorus"],
+  ["Yıldız", "Star"],
+  ["Çınar", "Plane Tree"],
+  ["Mavi Köşk", "Blue Mansion"],
+  ["Gül Konağı", "Rose House"],
+  ["Ay Işığı", "Moonlight"],
+  ["Hilal", "Crescent"],
+  ["Defne", "Laurel"],
+  ["Ihlamur", "Linden"],
+  ["Sedef", "Pearl"],
+  ["Kristal", "Crystal"],
+  ["Elmas", "Diamond"],
+  ["Zümrüt", "Emerald"],
+  ["Nergis", "Narcissus"],
+  ["Papatya", "Daisy"],
+  ["Selvi", "Cypress"],
+  ["Şahane", "Splendid"],
+  ["Lüks", "Luxe"],
+  ["Anka", "Phoenix"],
+  ["Sultan", "Sultan"],
 ] as const;
 const VENUE_KINDS: { key: string; tr: string; en: string }[] = [
   { key: "wedding_hall", tr: "Düğün Salonu", en: "Wedding Hall" },
@@ -242,19 +287,42 @@ const SPACES = [
   { tr: "VIP Salon", en: "VIP Room", cap: [30, 90] },
 ] as const;
 const CATERER_NAMES = [
-  ["Anadolu Sofrası", "Anatolian Table"], ["Mangal Ustası", "Mangal Master"], ["Lokma Evi", "Lokma House"],
-  ["Ege Mezeleri", "Aegean Meze"], ["Karadeniz Mutfağı", "Black Sea Kitchen"], ["Kıbrıs Lezzetleri", "Cypriot Flavours"],
-  ["Osmanlı Ziyafeti", "Ottoman Feast"], ["Baklava Sarayı", "Baklava Palace"], ["Köfteci Dayı", "Uncle's Köfte"],
-  ["Döner Durağı", "Döner Stop"], ["Hayır Lokması", "Charity Lokma"], ["Sofra Catering", "Sofra Catering"],
-  ["Gurbet Mutfağı", "Homeland Kitchen"], ["Tandır Evi", "Tandır House"], ["Mevsim Catering", "Seasons Catering"],
+  ["Anadolu Sofrası", "Anatolian Table"],
+  ["Mangal Ustası", "Mangal Master"],
+  ["Lokma Evi", "Lokma House"],
+  ["Ege Mezeleri", "Aegean Meze"],
+  ["Karadeniz Mutfağı", "Black Sea Kitchen"],
+  ["Kıbrıs Lezzetleri", "Cypriot Flavours"],
+  ["Osmanlı Ziyafeti", "Ottoman Feast"],
+  ["Baklava Sarayı", "Baklava Palace"],
+  ["Köfteci Dayı", "Uncle's Köfte"],
+  ["Döner Durağı", "Döner Stop"],
+  ["Hayır Lokması", "Charity Lokma"],
+  ["Sofra Catering", "Sofra Catering"],
+  ["Gurbet Mutfağı", "Homeland Kitchen"],
+  ["Tandır Evi", "Tandır House"],
+  ["Mevsim Catering", "Seasons Catering"],
 ] as const;
 const PERFORMER_NAMES = [
-  ["Grup Halay", "wedding_band"], ["Davulcu Mehmet", "davul_zurna"], ["Bağlama Sesi", "saz_baglama"],
-  ["Halaycılar", "halay_band"], ["Ses Sanatçısı Ayşe", "singer"], ["DJ Tolga", "dj"], ["Raks Leyla", "oriental_dancer"],
-  ["Anadolu Halk Dansları", "folk_dance"], ["Fasıl Meşk", "fasil"], ["Sema Ritüeli", "semazen"],
-  ["Neşeli Animasyon", "kids_entertainer"], ["Sunucu Kerem", "mc_host"], ["Kına Gecem", "kina_organiser"],
-  ["Orkestra Yıldız", "wedding_band"], ["Zurna Kardeşler", "davul_zurna"], ["DJ Elif", "dj"],
-  ["Grup Karadeniz", "wedding_band"], ["Saz Ustası Ali", "saz_baglama"], ["Gece Mavisi", "singer"],
+  ["Grup Halay", "wedding_band"],
+  ["Davulcu Mehmet", "davul_zurna"],
+  ["Bağlama Sesi", "saz_baglama"],
+  ["Halaycılar", "halay_band"],
+  ["Ses Sanatçısı Ayşe", "singer"],
+  ["DJ Tolga", "dj"],
+  ["Raks Leyla", "oriental_dancer"],
+  ["Anadolu Halk Dansları", "folk_dance"],
+  ["Fasıl Meşk", "fasil"],
+  ["Sema Ritüeli", "semazen"],
+  ["Neşeli Animasyon", "kids_entertainer"],
+  ["Sunucu Kerem", "mc_host"],
+  ["Kına Gecem", "kina_organiser"],
+  ["Orkestra Yıldız", "wedding_band"],
+  ["Zurna Kardeşler", "davul_zurna"],
+  ["DJ Elif", "dj"],
+  ["Grup Karadeniz", "wedding_band"],
+  ["Saz Ustası Ali", "saz_baglama"],
+  ["Gece Mavisi", "singer"],
   ["Efe Folklor", "folk_dance"],
 ] as const;
 
@@ -280,7 +348,14 @@ async function wipeDemo(db: DB) {
     restart identity cascade`);
 }
 
-async function createUser(db: DB, email: string, name: string, role: "customer" | "business" | "admin", locale: "tr" | "en", country: string) {
+async function createUser(
+  db: DB,
+  email: string,
+  name: string,
+  role: "customer" | "business" | "admin",
+  locale: "tr" | "en",
+  country: string,
+) {
   const [u] = await db
     .insert(s.user)
     .values({ email, name, role, emailVerified: true, preferredLocale: locale, countryIso2: country })
@@ -303,7 +378,9 @@ async function seedDemo(db: DB) {
   if (RESET) await wipeDemo(db);
 
   const now = new Date();
-  const cities = Object.fromEntries((await db.select().from(s.cities)).map((c) => [c.googlePlaceId!.replace("seed:", ""), c]));
+  const cities = Object.fromEntries(
+    (await db.select().from(s.cities)).map((c) => [c.googlePlaceId!.replace("seed:", ""), c]),
+  );
   const eventTypes = await db.select().from(s.eventTypes);
   const venueTypes = Object.fromEntries((await db.select().from(s.venueTypes)).map((v) => [v.key, v]));
   const amenities = await db.select().from(s.amenities);
@@ -325,7 +402,16 @@ async function seedDemo(db: DB) {
   const customers = [];
   for (let i = 1; i <= 8; i++) {
     const loc = i % 2 ? "tr" : "en";
-    customers.push(await createUser(db, `customer${i}@bizimevent.test`, `${pick(["Ayşe", "Mehmet", "Zeynep", "Emre", "Elif", "Can", "Deniz", "Selin"])} ${pick(["Yılmaz", "Kaya", "Demir", "Şahin", "Çelik", "Arslan"])}`, "customer", loc, pick(["GB", "TR", "DE", "NL"])));
+    customers.push(
+      await createUser(
+        db,
+        `customer${i}@bizimevent.test`,
+        `${pick(["Ayşe", "Mehmet", "Zeynep", "Emre", "Elif", "Can", "Deniz", "Selin"])} ${pick(["Yılmaz", "Kaya", "Demir", "Şahin", "Çelik", "Arslan"])}`,
+        "customer",
+        loc,
+        pick(["GB", "TR", "DE", "NL"]),
+      ),
+    );
   }
 
   type Spec = { type: "venue" | "caterer" | "performer"; name: readonly [string, string]; extra?: string };
@@ -343,7 +429,14 @@ async function seedDemo(db: DB) {
     ownerIndex++;
     const market = weightedMarket();
     const city = cities[market.city];
-    const owner = await createUser(db, `owner${ownerIndex}@bizimevent.test`, `${spec.name[0]} Owner`, "business", market.currency === "TRY" ? "tr" : pick(["tr", "en"]), city.countryIso2);
+    const owner = await createUser(
+      db,
+      `owner${ownerIndex}@bizimevent.test`,
+      `${spec.name[0]} Owner`,
+      "business",
+      market.currency === "TRY" ? "tr" : pick(["tr", "en"]),
+      city.countryIso2,
+    );
     const kind = spec.type === "venue" ? pick(VENUE_KINDS) : null;
     const nameTr = spec.type === "venue" ? `${spec.name[0]} ${kind!.tr}` : spec.name[0];
     const nameEn = spec.type === "venue" ? `${spec.name[1]} ${kind!.en}` : spec.name[1];
@@ -351,7 +444,10 @@ async function seedDemo(db: DB) {
     // A few businesses are still waiting for approval (no subscription yet).
     const pending = bi % 13 === 12;
     const approvedAt = new Date(now.getTime() - between(5, 400) * DAY);
-    const [org] = await db.insert(s.organization).values({ name: nameEn, slug: `${slugify(nameEn)}-${bi}` }).returning();
+    const [org] = await db
+      .insert(s.organization)
+      .values({ name: nameEn, slug: `${slugify(nameEn)}-${bi}` })
+      .returning();
     await db.insert(s.member).values({ organizationId: org.id, userId: owner.id, role: "owner" });
 
     const [biz] = await db
@@ -365,7 +461,12 @@ async function seedDemo(db: DB) {
         slug: `${slugify(nameEn)}-${slugify(city.nameEn)}`,
         descriptionTr: `${city.nameTr}'da ${spec.type === "venue" ? "mekan" : spec.type === "caterer" ? "ikram hizmeti" : "sahne sanatçısı"} olarak yıllardır topluluğumuzun mutlu günlerinde yanınızdayız.`,
         descriptionEn: `Serving the community in ${city.nameEn} for years — ${spec.type === "venue" ? "a venue" : spec.type === "caterer" ? "catering" : "live entertainment"} for your happiest days.`,
-        phoneE164: market.currency === "GBP" ? `+4420${between(10000000, 99999999)}` : market.currency === "TRY" ? `+90212${between(1000000, 9999999)}` : `+4930${between(1000000, 9999999)}`,
+        phoneE164:
+          market.currency === "GBP"
+            ? `+4420${between(10000000, 99999999)}`
+            : market.currency === "TRY"
+              ? `+90212${between(1000000, 9999999)}`
+              : `+4930${between(1000000, 9999999)}`,
         email: `hello@${slugify(nameEn)}.example`,
         instagram: slugify(nameEn).replace(/-/g, ""),
         addressLine: `${between(1, 250)} ${pick(["High Street", "Market Road", "Caddesi", "Straße", "Plein"])}, ${city.nameEn}`,
@@ -415,17 +516,30 @@ async function seedDemo(db: DB) {
       const space = SPACES[si];
       const titleTr = spec.type === "venue" && spaces > 1 ? `${space.tr} — ${nameTr}` : nameTr;
       const titleEn = spec.type === "venue" && spaces > 1 ? `${space.en} — ${nameEn}` : nameEn;
-      const maxGuests = spec.type === "venue" ? between(space.cap[0], space.cap[1]) : spec.type === "caterer" ? between(150, 1500) : null;
+      const maxGuests =
+        spec.type === "venue"
+          ? between(space.cap[0], space.cap[1])
+          : spec.type === "caterer"
+            ? between(150, 1500)
+            : null;
       const priceFrom =
         spec.type === "venue"
-          ? market.currency === "TRY" ? between(150_000, 900_000) : between(1_500, 15_000)
+          ? market.currency === "TRY"
+            ? between(150_000, 900_000)
+            : between(1_500, 15_000)
           : spec.type === "caterer"
-            ? market.currency === "TRY" ? between(900, 3_500) : between(18, 75)
-            : market.currency === "TRY" ? between(15_000, 120_000) : between(350, 3_000);
+            ? market.currency === "TRY"
+              ? between(900, 3_500)
+              : between(18, 75)
+            : market.currency === "TRY"
+              ? between(15_000, 120_000)
+              : between(350, 3_000);
       const pricingModel =
-        spec.type === "venue" ? pick(["hire_fee_session", "minimum_spend", "per_person"] as const)
-          : spec.type === "caterer" ? "per_person" as const
-          : pick(["per_set", "per_event"] as const);
+        spec.type === "venue"
+          ? pick(["hire_fee_session", "minimum_spend", "per_person"] as const)
+          : spec.type === "caterer"
+            ? ("per_person" as const)
+            : pick(["per_set", "per_event"] as const);
       const policy = pick(policies);
       const [listing] = await db
         .insert(s.listings)
@@ -456,8 +570,12 @@ async function seedDemo(db: DB) {
       const ets = pickN(eventTypes, between(3, 7));
       await db.insert(s.listingEventTypes).values(ets.map((e) => ({ listingId: listing.id, eventTypeId: e.id })));
       // Amenities
-      const am = pickN(amenities.filter((a) => a.appliesTo.includes(spec.type)), between(3, 8));
-      if (am.length) await db.insert(s.listingAmenities).values(am.map((a) => ({ listingId: listing.id, amenityId: a.id })));
+      const am = pickN(
+        amenities.filter((a) => a.appliesTo.includes(spec.type)),
+        between(3, 8),
+      );
+      if (am.length)
+        await db.insert(s.listingAmenities).values(am.map((a) => ({ listingId: listing.id, amenityId: a.id })));
 
       if (spec.type === "venue") {
         const cap = maxGuests ?? 200;
@@ -483,7 +601,8 @@ async function seedDemo(db: DB) {
           parkingSpaces: rand() > 0.3 ? between(10, 300) : null,
           prayerRoom: rand() > 0.6,
           separateWomensArea: rand() > 0.8,
-          nearestTransport: market.currency === "GBP" ? pick(["Tube station 5 min walk", "Train station 10 min walk"]) : null,
+          nearestTransport:
+            market.currency === "GBP" ? pick(["Tube station 5 min walk", "Train station 10 min walk"]) : null,
         });
         // Weekend pricing grid
         await db.insert(s.listingPrices).values(
@@ -500,8 +619,14 @@ async function seedDemo(db: DB) {
       } else if (spec.type === "caterer") {
         await db.insert(s.catererDetails).values({
           listingId: listing.id,
-          cuisines: pickN(CUISINES.map((c) => c[0]), between(1, 3)),
-          serviceStyles: pickN(SERVICE_STYLES.map((c) => c[0]), between(2, 4)),
+          cuisines: pickN(
+            CUISINES.map((c) => c[0]),
+            between(1, 3),
+          ),
+          serviceStyles: pickN(
+            SERVICE_STYLES.map((c) => c[0]),
+            between(2, 4),
+          ),
           halalCertified: rand() > 0.2,
           halalCertBody: rand() > 0.5 ? "HMC" : null,
           minGuests: 50,
@@ -515,7 +640,9 @@ async function seedDemo(db: DB) {
         await db.insert(s.performerDetails).values({
           listingId: listing.id,
           actTypes: [spec.extra!],
-          languages: pickN(["tr", "en", "ku", "de", "nl"], between(1, 3)).concat(["tr"]).filter((v, i, a) => a.indexOf(v) === i),
+          languages: pickN(["tr", "en", "ku", "de", "nl"], between(1, 3))
+            .concat(["tr"])
+            .filter((v, i, a) => a.indexOf(v) === i),
           setLengthMinutes: pick([45, 60, 90, 120]),
           setsPerEvent: pick([1, 2, 3]),
           ownPaIncluded: rand() > 0.4,
@@ -546,7 +673,13 @@ async function seedDemo(db: DB) {
         );
       }
 
-      createdListings.push({ id: listing.id, businessId: biz.id, timezone: city.timezone, currency: market.currency, public: false });
+      createdListings.push({
+        id: listing.id,
+        businessId: biz.id,
+        timezone: city.timezone,
+        currency: market.currency,
+        public: false,
+      });
     }
   }
 
@@ -558,7 +691,12 @@ async function seedDemo(db: DB) {
 
   console.log("→ enquiries, bookings, reviews");
   const publicListings = await db
-    .select({ id: s.listings.id, businessId: s.listings.businessId, currency: s.listings.currency, priceFrom: s.listings.priceFrom })
+    .select({
+      id: s.listings.id,
+      businessId: s.listings.businessId,
+      currency: s.listings.currency,
+      priceFrom: s.listings.priceFrom,
+    })
     .from(s.listings)
     .where(eq(s.listings.isPublic, true));
   const tzByBiz = Object.fromEntries(createdListings.map((l) => [l.businessId, l.timezone]));
@@ -566,7 +704,9 @@ async function seedDemo(db: DB) {
   for (const [i, l] of publicListings.slice(0, 40).entries()) {
     const customer = customers[i % customers.length];
     const past = i % 2 === 0;
-    const eventDate = new Date(now.getTime() + (past ? -between(10, 200) : between(20, 300)) * DAY).toISOString().slice(0, 10);
+    const eventDate = new Date(now.getTime() + (past ? -between(10, 200) : between(20, 300)) * DAY)
+      .toISOString()
+      .slice(0, 10);
     const [enq] = await db
       .insert(s.enquiries)
       .values({
@@ -576,7 +716,10 @@ async function seedDemo(db: DB) {
         eventTypeId: pick(eventTypes).id,
         eventDate,
         guests: between(50, 400),
-        message: customer.preferredLocale === "tr" ? "Merhaba, bu tarih için müsaitlik ve fiyat bilgisi alabilir miyim?" : "Hello, could you share availability and pricing for this date?",
+        message:
+          customer.preferredLocale === "tr"
+            ? "Merhaba, bu tarih için müsaitlik ve fiyat bilgisi alabilir miyim?"
+            : "Hello, could you share availability and pricing for this date?",
         status: past ? "booked" : pick(["new", "replied", "offer_sent"] as const),
         firstResponseAt: new Date(now.getTime() - between(1, 30) * DAY),
         lastMessageAt: new Date(now.getTime() - between(0, 10) * DAY),
@@ -616,8 +759,24 @@ async function seedDemo(db: DB) {
           ratingService: rating,
           ratingQuality: rating,
           locale: customer.preferredLocale,
-          body: customer.preferredLocale === "tr" ? pick(["Her şey mükemmeldi, misafirlerimiz çok memnun kaldı.", "Ekip çok ilgiliydi, kesinlikle tavsiye ederim.", "Güzel bir geceydi, küçük aksaklıklar oldu ama genel olarak memnunuz."]) : pick(["Everything was perfect — our guests loved it.", "Very attentive team, highly recommended.", "Lovely night; a few small hiccups but we were happy overall."]),
-          businessReply: rand() > 0.5 ? (customer.preferredLocale === "tr" ? "Güzel yorumunuz için teşekkür ederiz!" : "Thank you for the kind words!") : null,
+          body:
+            customer.preferredLocale === "tr"
+              ? pick([
+                  "Her şey mükemmeldi, misafirlerimiz çok memnun kaldı.",
+                  "Ekip çok ilgiliydi, kesinlikle tavsiye ederim.",
+                  "Güzel bir geceydi, küçük aksaklıklar oldu ama genel olarak memnunuz.",
+                ])
+              : pick([
+                  "Everything was perfect — our guests loved it.",
+                  "Very attentive team, highly recommended.",
+                  "Lovely night; a few small hiccups but we were happy overall.",
+                ]),
+          businessReply:
+            rand() > 0.5
+              ? customer.preferredLocale === "tr"
+                ? "Güzel yorumunuz için teşekkür ederiz!"
+                : "Thank you for the kind words!"
+              : null,
           status: "published",
         });
         reviewCount++;
@@ -634,7 +793,9 @@ async function seedDemo(db: DB) {
   const [{ total, pub }] = await db
     .select({ total: sql<number>`count(*)::int`, pub: sql<number>`count(*) filter (where is_public)::int` })
     .from(s.listings);
-  console.log(`✓ demo: ${specs.length} businesses, ${total} listings (${pub} public), ${customers.length} customers, ${reviewCount} reviews`);
+  console.log(
+    `✓ demo: ${specs.length} businesses, ${total} listings (${pub} public), ${customers.length} customers, ${reviewCount} reviews`,
+  );
   console.log(`  logins: admin@bizimevent.test / owner1@… / customer1@… — password ${DEMO_PASSWORD}`);
 }
 
@@ -660,8 +821,12 @@ async function main() {
   const started = Date.now();
   await seedReference(db);
   if (!NO_DEMO) await seedDemo(db);
-  const [{ bytes }] = await db.execute<{ bytes: string }>(sql`select pg_database_size(current_database())::text as bytes`).then((r) => r.rows);
-  console.log(`✓ seed finished in ${((Date.now() - started) / 1000).toFixed(1)}s — database size ${(Number(bytes) / 1024 / 1024).toFixed(1)} MB of 1024 MB free tier`);
+  const [{ bytes }] = await db
+    .execute<{ bytes: string }>(sql`select pg_database_size(current_database())::text as bytes`)
+    .then((r) => r.rows);
+  console.log(
+    `✓ seed finished in ${((Date.now() - started) / 1000).toFixed(1)}s — database size ${(Number(bytes) / 1024 / 1024).toFixed(1)} MB of 1024 MB free tier`,
+  );
   await pool.end();
 }
 

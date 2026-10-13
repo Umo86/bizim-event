@@ -2,10 +2,11 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocale, useTranslations } from "next-intl";
+import { useRouter as useRawRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Link, useRouter } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { signIn, signUp } from "@/lib/auth-client";
@@ -23,10 +24,15 @@ export function AuthForm({ mode, googleEnabled }: { mode: Mode; googleEnabled: b
   const t = useTranslations("auth");
   const tc = useTranslations("common");
   const locale = useLocale();
-  const router = useRouter();
+  const router = useRawRouter();
+  const search = useSearchParams();
   const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const { register, handleSubmit, getValues, formState } = useForm<Values>({ resolver: zodResolver(schema) });
-  const callbackURL = `/${locale}/account`;
+  // Only same-site, locale-prefixed paths are accepted as a return address.
+  const nextParam = search.get("next");
+  const callbackURL =
+    nextParam && /^\/(tr|en)(\/|$)/.test(nextParam) && !nextParam.startsWith("//") ? nextParam : `/${locale}/account`;
+  const otherModeHref = `${mode === "sign-in" ? "/sign-up" : "/sign-in"}${nextParam ? `?next=${encodeURIComponent(callbackURL)}` : ""}`;
 
   const onSubmit = async (v: Values) => {
     setNotice(null);
@@ -43,10 +49,15 @@ export function AuthForm({ mode, googleEnabled }: { mode: Mode; googleEnabled: b
     }
     const { error } = await signIn.email({ email: v.email, password: v.password, callbackURL });
     if (error) {
-      const text = error.status === 403 ? t("emailNotVerified") : error.status === 401 ? t("invalidCredentials") : t("genericError");
+      const text =
+        error.status === 403
+          ? t("emailNotVerified")
+          : error.status === 401
+            ? t("invalidCredentials")
+            : t("genericError");
       return setNotice({ kind: "error", text });
     }
-    router.push("/account");
+    router.push(callbackURL);
     router.refresh();
   };
 
@@ -61,7 +72,12 @@ export function AuthForm({ mode, googleEnabled }: { mode: Mode; googleEnabled: b
     <div className="space-y-5">
       {googleEnabled && (
         <>
-          <Button variant="outline" className="w-full" type="button" onClick={() => signIn.social({ provider: "google", callbackURL })}>
+          <Button
+            variant="outline"
+            className="w-full"
+            type="button"
+            onClick={() => signIn.social({ provider: "google", callbackURL })}
+          >
             {t("google")}
           </Button>
           <div className="flex items-center gap-3 text-xs uppercase text-muted">
@@ -81,7 +97,13 @@ export function AuthForm({ mode, googleEnabled }: { mode: Mode; googleEnabled: b
         )}
         <div>
           <Label htmlFor="email">{t("email")}</Label>
-          <Input id="email" type="email" autoComplete="email" aria-invalid={!!formState.errors.email} {...register("email")} />
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            aria-invalid={!!formState.errors.email}
+            {...register("email")}
+          />
         </div>
         <div>
           <Label htmlFor="password">{t("password")}</Label>
@@ -99,7 +121,14 @@ export function AuthForm({ mode, googleEnabled }: { mode: Mode; googleEnabled: b
         </div>
 
         {notice && (
-          <p role="status" className={notice.kind === "ok" ? "rounded-lg bg-primary-soft p-3 text-sm text-ink" : "rounded-lg bg-red-50 p-3 text-sm text-danger"}>
+          <p
+            role="status"
+            className={
+              notice.kind === "ok"
+                ? "rounded-lg bg-primary-soft p-3 text-sm text-ink"
+                : "rounded-lg bg-red-50 p-3 text-sm text-danger"
+            }
+          >
             {notice.text}
           </p>
         )}
@@ -117,7 +146,7 @@ export function AuthForm({ mode, googleEnabled }: { mode: Mode; googleEnabled: b
 
       <p className="text-center text-sm text-muted">
         {mode === "sign-in" ? t("noAccount") : t("haveAccount")}{" "}
-        <Link href={mode === "sign-in" ? "/sign-up" : "/sign-in"} className="font-semibold text-primary-strong hover:underline">
+        <Link href={otherModeHref} className="font-semibold text-primary-strong hover:underline">
           {mode === "sign-in" ? t("signUpButton") : t("signInButton")}
         </Link>
       </p>

@@ -36,7 +36,7 @@ export function CountrySelect({ options, label }: { options: Option[]; label: st
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="max-w-28 cursor-pointer truncate rounded-lg border border-line bg-white py-1.5 pl-1 pr-6 text-sm"
+        className="max-w-40 cursor-pointer truncate rounded-lg border border-line bg-white py-1.5 pl-1 pr-6 text-sm"
       >
         {options.map((o) => (
           <option key={o.iso2} value={o.iso2}>

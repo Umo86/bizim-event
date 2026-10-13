@@ -20,7 +20,10 @@ export function AccountMenu({ labels }: { labels: Labels }) {
         <Link href="/sign-in" className={buttonVariants({ variant: "ghost", size: "sm" })}>
           {labels.logIn}
         </Link>
-        <Link href="/sign-up" className={buttonVariants({ variant: "outline", size: "sm" }) + " hidden sm:inline-flex"}>
+        <Link
+          href="/sign-up"
+          className={buttonVariants({ variant: "outline", size: "sm", className: "hidden sm:inline-flex" })}
+        >
           {labels.signUp}
         </Link>
       </div>
@@ -35,7 +38,7 @@ export function AccountMenu({ labels }: { labels: Labels }) {
       </Link>
       <button
         type="button"
-        className={buttonVariants({ variant: "link", size: "sm" }) + " hidden md:inline-flex"}
+        className={buttonVariants({ variant: "link", size: "sm", className: "hidden md:inline-flex" })}
         onClick={async () => {
           await signOut();
           router.refresh();

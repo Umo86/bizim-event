@@ -22,6 +22,7 @@ import { amenities, cancellationPolicies, eventTypes, listingTypeEnum, venueType
 export const listingStatusEnum = pgEnum("listing_status", [
   "draft",
   "pending_review",
+  "changes_requested",
   "approved",
   "rejected",
   "paused",
@@ -53,6 +54,8 @@ export const listings = pgTable(
     descriptionEn: text("description_en"),
     status: listingStatusEnum("status").notNull().default("draft"),
     rejectionReason: text("rejection_reason"),
+    reviewNote: text("review_note"),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }),
     // Derived: business approved AND listing approved AND subscription in good standing.
     // Maintained by src/server/visibility.ts — never set by hand.
     isPublic: boolean("is_public").notNull().default(false),
@@ -60,7 +63,8 @@ export const listings = pgTable(
     cancellationPolicyId: uuid("cancellation_policy_id").references(() => cancellationPolicies.id),
     minGuests: integer("min_guests"),
     maxGuests: integer("max_guests"),
-    pricingModel: pricingModelEnum("pricing_model").notNull().default("custom_quote"),
+    // Null until the owner saves the pricing step (custom_quote is a real choice, not a default).
+    pricingModel: pricingModelEnum("pricing_model"),
     priceFrom: numeric("price_from", { precision: 12, scale: 2, mode: "number" }),
     currency: varchar("currency", { length: 3 }).notNull(),
     // Normalised daily (Frankfurter rates) for cross-currency sort/filter.
@@ -117,7 +121,10 @@ export const listingCapacities = pgTable(
     layout: capacityLayoutEnum("layout").notNull(),
     capacity: integer("capacity").notNull(),
   },
-  (t) => [primaryKey({ columns: [t.listingId, t.layout] }), index("listing_capacities_layout_cap_idx").on(t.layout, t.capacity)],
+  (t) => [
+    primaryKey({ columns: [t.listingId, t.layout] }),
+    index("listing_capacities_layout_cap_idx").on(t.layout, t.capacity),
+  ],
 );
 
 export const sessionEnum = pgEnum("price_session", ["morning", "afternoon", "evening", "full_day"]);
@@ -152,6 +159,8 @@ export const listingMedia = pgTable(
     urlMedium: text("url_medium"),
     urlLarge: text("url_large"),
     blurDataUrl: text("blur_data_url"), // tiny (<1 KB) placeholder generated client-side at upload
+    contentType: text("content_type"),
+    bytes: integer("bytes"), // total size of all stored variants, for the R2 usage page
     width: integer("width"),
     height: integer("height"),
     captionTr: text("caption_tr"),
@@ -177,7 +186,8 @@ export const venueDetails = pgTable(
     venueTypeId: uuid("venue_type_id").references(() => venueTypes.id),
     inHouseCatering: boolean("in_house_catering").notNull().default(false),
     externalCateringAllowed: boolean("external_catering_allowed").notNull().default(false),
-    alcohol: alcoholPolicyEnum("alcohol").notNull().default("none"),
+    // null = the business hasn't said. Never default to "none": that would claim an alcohol-free venue.
+    alcohol: alcoholPolicyEnum("alcohol"),
     halalKitchen: boolean("halal_kitchen").notNull().default(false),
     alcoholFreeOption: boolean("alcohol_free_option").notNull().default(false),
     liveMusicAllowed: boolean("live_music_allowed").notNull().default(false),

@@ -1,6 +1,6 @@
 import "server-only";
 import { and, eq, isNull } from "drizzle-orm";
-import { bookings, businesses, enquiries, member } from "@/db/schema";
+import { bookings, businesses, enquiries, member, user } from "@/db/schema";
 import type { DalContext, SessionUser } from "./context";
 import { DalError } from "./errors";
 
@@ -14,9 +14,16 @@ export function requireUser(ctx: DalContext): SessionUser {
   return ctx.user;
 }
 
-export function requireAdmin(ctx: DalContext): SessionUser {
+/**
+ * Admins only. The session's role can be up to five minutes old (Better Auth
+ * cookie cache), so the role is re-read from the database: removing someone's
+ * admin role takes effect on their next request.
+ */
+export async function requireAdmin(ctx: DalContext): Promise<SessionUser> {
   const u = requireUser(ctx);
   if (u.role !== "admin") throw new DalError("FORBIDDEN", "admin_only");
+  const [row] = await ctx.db.select({ role: user.role }).from(user).where(eq(user.id, u.id)).limit(1);
+  if (row?.role !== "admin") throw new DalError("FORBIDDEN", "admin_only");
   return u;
 }
 

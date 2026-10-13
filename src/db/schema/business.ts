@@ -20,6 +20,7 @@ import { listingTypeEnum } from "./taxonomy";
 export const businessStatusEnum = pgEnum("business_status", [
   "draft",
   "pending_review",
+  "changes_requested", // admin sent it back with a note; the owner edits and resubmits
   "approved",
   "rejected",
   "suspended",
@@ -55,6 +56,8 @@ export const businesses = pgTable(
     currency: varchar("currency", { length: 3 }),
     status: businessStatusEnum("status").notNull().default("draft"),
     rejectionReason: text("rejection_reason"),
+    // Message from the admin when requesting changes; cleared on resubmission.
+    reviewNote: text("review_note"),
     submittedAt: timestamp("submitted_at", { withTimezone: true }),
     approvedAt: timestamp("approved_at", { withTimezone: true }),
     responseRate: numeric("response_rate", { precision: 5, scale: 2, mode: "number" }),

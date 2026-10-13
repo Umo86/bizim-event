@@ -1,6 +1,6 @@
 import "server-only";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
-import type { DB } from "@/db";
+import type { Queryable } from "@/db";
 import { businesses, cities, countries, listings, subscriptions } from "@/db/schema";
 import { computeListingIsPublic } from "@/server/rules";
 
@@ -10,7 +10,7 @@ import { computeListingIsPublic } from "@/server/rules";
  * INTERNAL: callers must already have authorised the change (admin approval,
  * webhook, daily job). Not exported through the DAL.
  */
-export async function refreshBusinessVisibility(db: DB, businessId: string, now = new Date()) {
+export async function refreshBusinessVisibility(db: Queryable, businessId: string, now = new Date()) {
   const [biz] = await db.select().from(businesses).where(eq(businesses.id, businessId)).limit(1);
   if (!biz) return { changed: 0 };
   const [sub] = await db.select().from(subscriptions).where(eq(subscriptions.businessId, businessId)).limit(1);
@@ -42,7 +42,7 @@ export async function refreshBusinessVisibility(db: DB, businessId: string, now 
   return { changed: toPublic.length + toHidden.length };
 }
 
-export async function refreshCityCounts(db: DB, cityIds?: string[]) {
+export async function refreshCityCounts(db: Queryable, cityIds?: string[]) {
   const counts = db
     .select({ cityId: businesses.cityId, n: sql<number>`count(*)::int`.as("n") })
     .from(listings)
@@ -57,7 +57,7 @@ export async function refreshCityCounts(db: DB, cityIds?: string[]) {
     .where(target);
 }
 
-export async function refreshCountryVisibility(db: DB, isoCodes?: string[]) {
+export async function refreshCountryVisibility(db: Queryable, isoCodes?: string[]) {
   const target = isoCodes?.length ? inArray(countries.iso2, isoCodes) : sql`true`;
   await db
     .update(countries)

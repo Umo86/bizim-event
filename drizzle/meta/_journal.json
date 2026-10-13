@@ -15,6 +15,27 @@
       "when": 1791881334870,
       "tag": "0001_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791885681932,
+      "tag": "0002_review_flow",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791886081483,
+      "tag": "0003_pricing_model_nullable",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791889761214,
+      "tag": "0004_alcohol_unknown",
+      "breakpoints": true
     }
   ]
 }

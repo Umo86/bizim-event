@@ -66,6 +66,7 @@ const schema = z.object({
   // AI translation (optional)
   TRANSLATE_PROVIDER: z.enum(["none", "anthropic"]).default("none"),
   ANTHROPIC_API_KEY: z.string().optional(),
+  TRANSLATE_MODEL: z.string().default("claude-haiku-5-5"),
 
   // Vercel Cron
   CRON_SECRET: z.string().optional(),

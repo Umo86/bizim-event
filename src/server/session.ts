@@ -1,11 +1,20 @@
 import "server-only";
 import { headers } from "next/headers";
+import { cache } from "react";
 import { getAuth } from "@/lib/auth";
 import { getDb } from "@/db";
 import type { DalContext, SessionUser } from "./dal/context";
 
-/** Reads the current Better Auth session from request headers (dynamic). */
-export async function getSessionUser(): Promise<SessionUser | null> {
+/**
+ * Reads the current Better Auth session from request headers (dynamic).
+ * Memoised per request: layouts, pages and the header all ask for the user,
+ * but the session is only resolved once.
+ *
+ * The role comes from Better Auth's 5-minute cookie cache, so it can lag a role
+ * change by a few minutes. Fine for UI decisions; `requireAdmin` re-checks the
+ * database before any admin data is read or written.
+ */
+export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   // Read request headers first: this marks the caller as dynamic, so prerendering
   // stops here instead of trying to reach the database at build time.
   const requestHeaders = await headers();
@@ -19,7 +28,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     role: (u.role as SessionUser["role"]) ?? "customer",
     preferredLocale: u.preferredLocale === "en" ? "en" : "tr",
   };
-}
+});
 
 /** Builds the DAL context for server components, actions and route handlers. */
 export async function getDalContext(): Promise<DalContext> {

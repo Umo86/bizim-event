@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { Suspense } from "react";
 import { AuthForm } from "@/components/auth/auth-form";
 import { Card } from "@/components/ui/input";
 
@@ -14,7 +15,9 @@ export default async function SignUpPage() {
     <section className="mx-auto max-w-md px-4 py-16">
       <Card>
         <h1 className="mb-6 text-2xl font-bold">{t("signUpTitle")}</h1>
-        <AuthForm mode="sign-up" googleEnabled={googleEnabled} />
+        <Suspense fallback={<div className="h-80 animate-pulse rounded-xl bg-section" />}>
+          <AuthForm mode="sign-up" googleEnabled={googleEnabled} />
+        </Suspense>
       </Card>
     </section>
   );

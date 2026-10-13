@@ -15,6 +15,10 @@ export { schema };
  */
 // Both drivers expose the same pg-compatible query API, so we type against node-postgres.
 export type DB = NodePgDatabase<typeof schema>;
+/** A transaction handle — same query API as DB. */
+export type Tx = Parameters<Parameters<DB["transaction"]>[0]>[0];
+/** Anything internal helpers can query through: the pool or an open transaction. */
+export type Queryable = DB | Tx;
 
 function createDb(url: string): DB {
   if (/neon\.tech/.test(url)) {

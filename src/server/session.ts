@@ -32,5 +32,8 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
 
 /** Builds the DAL context for server components, actions and route handlers. */
 export async function getDalContext(): Promise<DalContext> {
-  return { db: getDb(), user: await getSessionUser() };
+  // Session first: it reads request headers, which stops prerendering before the
+  // database is touched (builds have no DATABASE_URL).
+  const user = await getSessionUser();
+  return { db: getDb(), user };
 }

@@ -44,7 +44,10 @@ export function AuthForm({ mode, googleEnabled }: { mode: Mode; googleEnabled: b
         callbackURL,
         preferredLocale: locale,
       } as Parameters<typeof signUp.email>[0]);
-      if (error) return setNotice({ kind: "error", text: error.message ?? t("genericError") });
+      if (error) {
+        // Better Auth's own messages are English-only, so they aren't shown.
+        return setNotice({ kind: "error", text: error.status === 429 ? t("tooManyAttempts") : t("genericError") });
+      }
       return setNotice({ kind: "ok", text: t("verifyEmailSent") });
     }
     const { error } = await signIn.email({ email: v.email, password: v.password, callbackURL });
@@ -54,7 +57,9 @@ export function AuthForm({ mode, googleEnabled }: { mode: Mode; googleEnabled: b
           ? t("emailNotVerified")
           : error.status === 401
             ? t("invalidCredentials")
-            : t("genericError");
+            : error.status === 429
+              ? t("tooManyAttempts")
+              : t("genericError");
       return setNotice({ kind: "error", text });
     }
     router.push(callbackURL);

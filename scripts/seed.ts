@@ -1,18 +1,30 @@
 /**
  * Seed script.
- *   pnpm db:seed            reference data (idempotent upserts) + demo data if none exists
- *   pnpm db:seed --reset    wipe demo data (businesses, listings, users, bookings…) and re-create it
- *   pnpm db:seed --no-demo  reference data only (countries, cities, taxonomies, plans)
+ *   pnpm db:seed                reference data (idempotent upserts) + test data if it isn't there yet
+ *   pnpm db:seed --reset        remove the test data and create it again
+ *   pnpm db:seed --no-demo      reference data only (countries, cities, taxonomies, plans)
+ *   pnpm db:seed --remove-demo  remove the test data and nothing else
  *
  * Reference data: all ISO 3166-1 countries, seeded cities with Turkish names,
  * bilingual taxonomies, cancellation policies, subscription plans (£6/month, £60/year).
- * Demo data: 30 venues, 15 caterers, 20 performers across UK/TR/DE/NL with
- * GBP/TRY/EUR prices; businesses in every subscription state; customers,
- * enquiries, bookings and reviews; one admin. Well under 1 MB of rows.
  *
- * Images: if UNSPLASH_ACCESS_KEY is set, city tiles and demo listings get
- * hotlinked Unsplash photos with attribution (per the Unsplash API guidelines);
- * otherwise they stay empty and the UI shows a branded gradient.
+ * Test ("demo") data: 22 venue businesses (30 venue listings), 15 caterers and 20
+ * performers across UK/TR/DE/NL with GBP/TRY/EUR prices; businesses in every review
+ * and subscription state; customers, enquiries, bookings and reviews; one admin.
+ * Well under 1 MB of rows. Every test account's email ends in @bizimevent.test
+ * (`.test` is reserved, so no real person can own one) and that is how the test
+ * data is found again: --reset and --remove-demo delete only those accounts and
+ * what belongs to them, never real sign-ups.
+ *
+ * Logins: venue1@…, caterer1@…, performer1@… own a business each; admin@… reviews;
+ * customer1@… books; newbusiness@… has nothing yet, for trying the setup wizard.
+ * The password is BizimEvent!2026 on a local database. Anywhere else, set
+ * SEED_PASSWORD (12+ characters) so the test admin doesn't get a password that's
+ * written in this repository.
+ *
+ * Images: if UNSPLASH_ACCESS_KEY is set, demo listings get hotlinked Unsplash
+ * photos with attribution (per the Unsplash API guidelines); otherwise they stay
+ * empty and the UI shows a branded gradient.
  */
 import { config } from "dotenv";
 config({ path: ".env.local" });
@@ -40,6 +52,7 @@ import {
 import { allCountries } from "../src/lib/countries-data";
 import { slugify } from "../src/lib/slug";
 import { unsplashImage, unsplashProfileUrl } from "../src/lib/unsplash";
+import { removeTestData, TEST_EMAIL_DOMAIN } from "../src/server/internal/test-data";
 import {
   refreshBusinessVisibility,
   refreshCityCounts,
@@ -49,7 +62,34 @@ import {
 const args = new Set(process.argv.slice(2));
 const RESET = args.has("--reset");
 const NO_DEMO = args.has("--no-demo");
-export const DEMO_PASSWORD = "BizimEvent!2026";
+const REMOVE_DEMO = args.has("--remove-demo");
+
+/** Every test account lives on this domain; it's how the test data is recognised and removed. */
+const DEMO_DOMAIN = TEST_EMAIL_DOMAIN;
+const LOCAL_PASSWORD = "BizimEvent!2026";
+
+/** Local Postgres (localhost, 127.0.0.1, a Docker service name) as opposed to Neon or any other server. */
+function isLocalDatabase(url: string) {
+  try {
+    const host = new URL(url).hostname.replace(/^\[|\]$/g, "");
+    return host === "127.0.0.1" || host === "::1" || !host.includes(".");
+  } catch {
+    return false;
+  }
+}
+
+/** The development password locally; elsewhere the test admin must not use a password that's in the repository. */
+function demoPassword(url: string) {
+  const chosen = process.env.SEED_PASSWORD;
+  if (chosen) {
+    if (chosen.length < 12) throw new Error("SEED_PASSWORD must be at least 12 characters.");
+    return chosen;
+  }
+  if (isLocalDatabase(url)) return LOCAL_PASSWORD;
+  throw new Error(
+    "This isn't a local database. Set SEED_PASSWORD (12+ characters) for the test accounts — they include an admin.",
+  );
+}
 
 // Deterministic PRNG so every seed run produces the same demo data.
 function mulberry32(seed: number) {
@@ -329,19 +369,15 @@ function weightedMarket() {
 
 const SUB_STATES = ["trialing", "active", "active", "trialing", "comped", "past_due", "active", "expired"] as const;
 
-async function wipeDemo(db: DB) {
-  console.log("→ wiping demo data");
-  await db.execute(sql`
-    truncate table reviews, bookings, offers, viewings, messages, enquiries, event_plans, shortlists,
-      availability_blocks, ical_feeds, listing_amenities, listing_event_types, listing_media, listing_prices,
-      listing_capacities, venue_details, caterer_details, performer_details, listings, subscriptions,
-      quick_replies, businesses, notifications, notification_preferences, reports, audit_log,
-      listing_stats_daily, member, invitation, organization, session, account, verification, "user"
-    restart identity cascade`);
+async function removeDemo(db: DB) {
+  console.log(`→ removing test data (@${DEMO_DOMAIN} accounts and what they own)`);
+  const removed = await removeTestData(db);
+  console.log(`  removed ${removed.businesses} businesses and ${removed.users} accounts`);
 }
 
 async function createUser(
   db: DB,
+  password: string,
   email: string,
   name: string,
   role: "customer" | "business" | "admin",
@@ -356,18 +392,37 @@ async function createUser(
     userId: u.id,
     accountId: u.id,
     providerId: "credential",
-    password: await hashPassword(DEMO_PASSWORD),
+    password,
   });
   return u;
 }
 
-async function seedDemo(db: DB) {
-  const [{ n }] = await db.select({ n: sql<number>`count(*)::int` }).from(s.businesses);
-  if (n > 0 && !RESET) {
-    console.log(`→ demo data skipped (${n} businesses exist; use --reset to recreate)`);
+/**
+ * Made-up phone numbers that can't ring anyone: Ofcom's drama range in London and the
+ * Bundesnetzagentur's in Berlin. Countries without such a range get none.
+ */
+function fictionalPhone(country: string) {
+  const n = between(0, 999).toString().padStart(3, "0");
+  if (country === "GB") return `+44207946${n.padStart(4, "0")}`;
+  if (country === "DE") return `+493023125${n}`;
+  return null;
+}
+
+type DemoSummary = { email: string; note: string };
+
+async function seedDemo(db: DB, password: string, url: string) {
+  const [existing] = await db
+    .select({ id: s.user.id })
+    .from(s.user)
+    .where(eq(s.user.email, `admin@${DEMO_DOMAIN}`))
+    .limit(1);
+  if (existing && !RESET) {
+    console.log("→ test data is already there (use --reset to create it again)");
     return;
   }
-  if (RESET) await wipeDemo(db);
+  if (RESET) await removeDemo(db);
+  const hashed = await hashPassword(password);
+  const summary: DemoSummary[] = [];
 
   const now = new Date();
   const cities = Object.fromEntries(
@@ -390,14 +445,18 @@ async function seedDemo(db: DB) {
     : { venue: [], caterer: [], performer: [] };
 
   console.log("→ users");
-  await createUser(db, "admin@bizimevent.test", "Bizim Event Admin", "admin", "tr", "GB");
+  await createUser(db, hashed, `admin@${DEMO_DOMAIN}`, "Bizim Event Admin", "admin", "tr", "GB");
+  summary.push({ email: `admin@${DEMO_DOMAIN}`, note: "admin: approval queue at /tr/admin/approvals" });
+  // Verified, with nothing set up yet: for trying "List your business" without waiting for an email.
+  await createUser(db, hashed, `newbusiness@${DEMO_DOMAIN}`, "Yeni İşletme", "customer", "tr", "GB");
   const customers = [];
   for (let i = 1; i <= 8; i++) {
     const loc = i % 2 ? "tr" : "en";
     customers.push(
       await createUser(
         db,
-        `customer${i}@bizimevent.test`,
+        hashed,
+        `customer${i}@${DEMO_DOMAIN}`,
         `${pick(["Ayşe", "Mehmet", "Zeynep", "Emre", "Elif", "Can", "Deniz", "Selin"])} ${pick(["Yılmaz", "Kaya", "Demir", "Şahin", "Çelik", "Arslan"])}`,
         "customer",
         loc,
@@ -413,17 +472,21 @@ async function seedDemo(db: DB) {
   for (const nm of CATERER_NAMES) specs.push({ type: "caterer", name: nm });
   for (const [nm, act] of PERFORMER_NAMES) specs.push({ type: "performer", name: [nm, nm], extra: act });
 
-  let ownerIndex = 0;
+  const ownerCount = { venue: 0, caterer: 0, performer: 0 };
+  const owners: { email: string; type: Spec["type"]; name: string; city: string; state: string; listings: number }[] =
+    [];
   const createdListings: { id: string; businessId: string; timezone: string; currency: string; public: boolean }[] = [];
 
   console.log("→ businesses & listings");
   for (const [bi, spec] of specs.entries()) {
-    ownerIndex++;
     const market = weightedMarket();
     const city = cities[market.city];
+    // venue1@…, caterer1@…, performer1@… — the login says what kind of business it owns.
+    const ownerEmail = `${spec.type}${++ownerCount[spec.type]}@${DEMO_DOMAIN}`;
     const owner = await createUser(
       db,
-      `owner${ownerIndex}@bizimevent.test`,
+      hashed,
+      ownerEmail,
       `${spec.name[0]} Owner`,
       "business",
       market.currency === "TRY" ? "tr" : pick(["tr", "en"]),
@@ -450,17 +513,14 @@ async function seedDemo(db: DB) {
         type: spec.type,
         nameTr,
         nameEn,
-        slug: `${slugify(nameEn)}-${slugify(city.nameEn)}`,
+        // "-test" keeps the natural slug free for a real business with the same name.
+        slug: `${slugify(nameEn)}-${slugify(city.nameEn)}-test`,
         descriptionTr: `${city.nameTr}'da ${spec.type === "venue" ? "mekan" : spec.type === "caterer" ? "ikram hizmeti" : "sahne sanatçısı"} olarak yıllardır topluluğumuzun mutlu günlerinde yanınızdayız.`,
         descriptionEn: `Serving the community in ${city.nameEn} for years — ${spec.type === "venue" ? "a venue" : spec.type === "caterer" ? "catering" : "live entertainment"} for your happiest days.`,
-        phoneE164:
-          market.currency === "GBP"
-            ? `+4420${between(10000000, 99999999)}`
-            : market.currency === "TRY"
-              ? `+90212${between(1000000, 9999999)}`
-              : `+4930${between(1000000, 9999999)}`,
+        phoneE164: fictionalPhone(city.countryIso2),
         email: `hello@${slugify(nameEn)}.example`,
-        instagram: slugify(nameEn).replace(/-/g, ""),
+        // No Instagram handle: a made-up one could belong to a real account.
+        instagram: null,
         addressLine: `${between(1, 250)} ${pick(["High Street", "Market Road", "Caddesi", "Straße", "Plein"])}, ${city.nameEn}`,
         location: { lng: city.centre!.lng + (rand() - 0.5) * 0.15, lat: city.centre!.lat + (rand() - 0.5) * 0.1 },
         countryIso2: city.countryIso2,
@@ -540,7 +600,7 @@ async function seedDemo(db: DB) {
           type: spec.type,
           titleTr,
           titleEn,
-          slug: `${slugify(titleEn)}-${slugify(city.nameEn)}-${bi}${si}`,
+          slug: `${slugify(titleEn)}-${slugify(city.nameEn)}-test-${bi}${si}`,
           descriptionTr: demoDescription(spec.type, "tr", city.nameTr),
           descriptionEn: demoDescription(spec.type, "en", city.nameEn),
           status: pending ? "pending_review" : "approved",
@@ -673,6 +733,14 @@ async function seedDemo(db: DB) {
         public: false,
       });
     }
+    owners.push({
+      email: ownerEmail,
+      type: spec.type,
+      name: nameTr,
+      city: city.nameEn,
+      state: pending ? "pending" : subState,
+      listings: spaces,
+    });
   }
 
   console.log("→ visibility");
@@ -786,10 +854,41 @@ async function seedDemo(db: DB) {
     .select({ total: sql<number>`count(*)::int`, pub: sql<number>`count(*) filter (where is_public)::int` })
     .from(s.listings);
   console.log(
-    `✓ demo: ${specs.length} businesses, ${total} listings (${pub} public), ${customers.length} customers, ${reviewCount} reviews`,
+    `✓ test data: ${specs.length} businesses, ${total} listings (${pub} live), ${customers.length} customers, ${reviewCount} reviews`,
   );
-  console.log(`  logins: admin@bizimevent.test / owner1@… / customer1@… — password ${DEMO_PASSWORD}`);
+
+  // One business per type in each interesting state, so there's a login for every screen.
+  for (const type of ["venue", "caterer", "performer"] as const) {
+    for (const state of ["trialing", "pending", "expired"]) {
+      const o = owners.find((x) => x.type === type && x.state === state);
+      if (o)
+        summary.push({
+          email: o.email,
+          note: `${o.name}, ${o.city}: ${STATE_NOTE[o.state]} (${o.listings} listing${o.listings > 1 ? "s" : ""})`,
+        });
+    }
+  }
+  summary.push({ email: `newbusiness@${DEMO_DOMAIN}`, note: 'verified, nothing set up yet: try "List your business"' });
+  summary.push({ email: `customer1@${DEMO_DOMAIN}`, note: "customer" });
+  const width = Math.max(...summary.map((x) => x.email.length)) + 2;
+  console.log(`\nTest logins (password: ${process.env.SEED_PASSWORD ? "the SEED_PASSWORD you set" : LOCAL_PASSWORD})`);
+  for (const x of summary) console.log(`  ${x.email.padEnd(width)}${x.note}`);
+  console.log(
+    `  All of them: venue1–${ownerCount.venue}, caterer1–${ownerCount.caterer}, performer1–${ownerCount.performer}, customer1–${customers.length} @${DEMO_DOMAIN}`,
+  );
+  if (!isLocalDatabase(url)) {
+    console.log("\n  This database isn't local. Remove the test data before launch: pnpm db:seed --remove-demo");
+  }
 }
+
+const STATE_NOTE: Record<string, string> = {
+  pending: "waiting for approval",
+  trialing: "approved and live, on the free trial",
+  active: "approved and live, subscribed",
+  comped: "approved and live, free of charge",
+  past_due: "approved and live, payment overdue (grace period)",
+  expired: "approved but hidden, the free trial has ended",
+};
 
 function demoDescription(type: "venue" | "caterer" | "performer", locale: "tr" | "en", city: string) {
   const tr = {
@@ -811,8 +910,14 @@ async function main() {
   const pool = new Pool({ connectionString: url, max: 2 });
   const db: DB = drizzle({ client: pool, schema: s });
   const started = Date.now();
-  await seedReference(db);
-  if (!NO_DEMO) await seedDemo(db);
+  if (REMOVE_DEMO) {
+    await removeDemo(db);
+  } else {
+    // Check the password before writing anything, so a refused run leaves the database as it was.
+    const password = NO_DEMO ? null : demoPassword(url);
+    await seedReference(db);
+    if (password) await seedDemo(db, password, url);
+  }
   const [{ bytes }] = await db
     .execute<{ bytes: string }>(sql`select pg_database_size(current_database())::text as bytes`)
     .then((r) => r.rows);

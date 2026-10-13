@@ -68,13 +68,25 @@ function createAuth() {
     },
     emailVerification: {
       sendOnSignUp: true,
+      // Logging in before verifying sends a fresh link (the sign-in form says so), so a lost
+      // or expired first email doesn't strand the account.
+      sendOnSignIn: true,
       autoSignInAfterVerification: true,
       sendVerificationEmail: async ({ user: u, url }) => {
         await sendActionEmail("verify", u.email, url, (u as { preferredLocale?: string }).preferredLocale);
       },
     },
     socialProviders: google,
-    rateLimit: { enabled: true, window: 60, max: 30 },
+    rateLimit: {
+      enabled: true,
+      window: 60,
+      max: 30,
+      customRules: {
+        // Every page load asks "who's logged in?" for the header; it's answered from the
+        // signed cookie cache, so limiting it only makes busy shared IPs look logged out.
+        "/get-session": false,
+      },
+    },
     plugins: [
       magicLink({
         expiresIn: 60 * 10,

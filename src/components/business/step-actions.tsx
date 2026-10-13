@@ -57,7 +57,12 @@ export function StepActions({ state, onBeforeLeave, onContinue, backHref, nextHr
             setBusy(true);
             try {
               const ok = await onContinue();
-              if (ok && nextHref) go(nextHref);
+              // No next step (the last section of the listing editor, the settings page): stay,
+              // but reload the page's server data so things like "Submit for review" catch up.
+              if (ok) {
+                if (nextHref) go(nextHref);
+                else startTransition(() => router.refresh());
+              }
             } finally {
               setBusy(false);
             }

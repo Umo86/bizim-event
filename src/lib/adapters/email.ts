@@ -38,12 +38,39 @@ class ResendProvider implements EmailProvider {
   }
 }
 
-/** Dev/CI fallback: logs the email instead of sending it. */
+/**
+ * Where development keeps the emails it would have sent (one JSON object per line),
+ * so verification and login links can be opened — by people and by the e2e tests.
+ */
+export const DEV_EMAIL_OUTBOX = ".dev-emails/outbox.jsonl";
+
+/** Dev/CI fallback: logs the email instead of sending it, and outside production keeps a copy in the outbox. */
 class ConsoleProvider implements EmailProvider {
   readonly name = "console";
   async send(m: EmailMessage) {
     logger.info("email.console", { to: m.to, subject: m.subject, preview: (m.text ?? m.html).slice(0, 400) });
+    if (process.env.NODE_ENV !== "production") await saveToOutbox(m);
     return { id: null };
+  }
+}
+
+async function saveToOutbox(m: EmailMessage) {
+  const { appendFile, mkdir } = await import("node:fs/promises");
+  const path = await import("node:path");
+  // turbopackIgnore: a dev-only file must not make the build trace the whole project.
+  const file = path.join(/*turbopackIgnore: true*/ process.cwd(), DEV_EMAIL_OUTBOX);
+  const entry = {
+    at: new Date().toISOString(),
+    to: Array.isArray(m.to) ? m.to : [m.to],
+    subject: m.subject,
+    kind: m.tags?.find((t) => t.name === "kind")?.value ?? null,
+    text: m.text ?? null,
+  };
+  try {
+    await mkdir(/*turbopackIgnore: true*/ path.dirname(file), { recursive: true });
+    await appendFile(/*turbopackIgnore: true*/ file, `${JSON.stringify(entry)}\n`);
+  } catch (error) {
+    logger.warn("email.outbox_failed", { message: error instanceof Error ? error.message : String(error) });
   }
 }
 

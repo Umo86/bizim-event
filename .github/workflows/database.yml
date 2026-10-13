@@ -1,0 +1,80 @@
+name: Database
+
+# Sets up the live (Neon) database, or adds and removes the test data, from the browser:
+# GitHub → Actions → Database → Run workflow → pick what to do.
+#
+# One-time setup — repository secrets (Settings → Secrets and variables → Actions):
+#   DATABASE_URL_UNPOOLED  Neon's direct connection string (the one without "-pooler" in
+#                          the host), from Vercel → Storage → your Neon database, or Neon's console.
+#   SEED_PASSWORD          12+ characters: the password every test account gets, including
+#                          the test admin. Only needed to add test data.
+#
+# Test data = every account on @bizimevent.test and what it owns. "remove test data" deletes
+# exactly that and never touches real sign-ups.
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: What to do
+        type: choice
+        default: set up (migrations and reference data)
+        options:
+          - check (change nothing)
+          - set up (migrations and reference data)
+          - set up and add test data
+          - recreate test data
+          - remove test data
+
+concurrency:
+  group: database
+  cancel-in-progress: false
+
+jobs:
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
+      SEED_PASSWORD: ${{ secrets.SEED_PASSWORD }}
+      ACTION: ${{ inputs.action }}
+    steps:
+      - name: Check the secrets
+        run: |
+          if [ -z "$DATABASE_URL_UNPOOLED" ]; then
+            echo "::error::Add the DATABASE_URL_UNPOOLED secret first: Settings → Secrets and variables → Actions → New repository secret."
+            exit 1
+          fi
+          case "$ACTION" in *"test data"*)
+            if [ "$ACTION" != "remove test data" ] && [ ${#SEED_PASSWORD} -lt 12 ]; then
+              echo "::error::Add a SEED_PASSWORD secret (12+ characters) for the test accounts first."
+              exit 1
+            fi
+          esac
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Before
+        run: pnpm db:status
+      - name: Apply migrations
+        if: startsWith(inputs.action, 'set up') || inputs.action == 'recreate test data'
+        run: pnpm db:migrate
+      - name: Reference data
+        if: inputs.action == 'set up (migrations and reference data)'
+        run: pnpm db:seed --no-demo
+      - name: Reference data and test data
+        if: inputs.action == 'set up and add test data'
+        run: pnpm db:seed
+      - name: Recreate test data
+        if: inputs.action == 'recreate test data'
+        run: pnpm db:seed --reset
+      - name: Remove test data
+        if: inputs.action == 'remove test data'
+        run: pnpm db:seed --remove-demo
+      - name: After
+        if: inputs.action != 'check (change nothing)'
+        run: pnpm db:status

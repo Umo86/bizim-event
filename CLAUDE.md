@@ -142,15 +142,42 @@ images), `areas` · Taxonomy (bilingual): `event_types`, `venue_types`, `act_typ
 
 ```
 pnpm dev | build | lint | typecheck | test
+pnpm test:e2e        # Playwright: sign up → verify → log in → wizard → approve → second listing (needs db:seed)
 pnpm db:generate     # SQL migration from schema changes
 pnpm db:migrate      # apply migrations (uses DATABASE_URL_UNPOOLED)
-pnpm db:seed         # countries, taxonomies, demo cities/businesses/listings/bookings, admin user
+pnpm db:seed         # reference data + test data (once); --reset recreates it, --remove-demo deletes it,
+                     # --no-demo = reference data only
+pnpm db:status       # read-only summary: migrations, reference data, businesses, test accounts
 pnpm r2:cors         # one-off: allow browser uploads to the R2 bucket from the app's origin
 pnpm format          # Prettier (printWidth 120)
 ```
 
 Integration tests need `TEST_DATABASE_URL` pointing at Postgres with PostGIS (CI uses `postgis/postgis:16-3.4`);
 they are skipped when it's unset.
+
+### Test data and end-to-end tests
+
+- **Test data = every account on `@bizimevent.test`** (`.test` is reserved, so no real person can own one) and what it
+  owns. `--reset` / `--remove-demo` delete exactly that, so they are safe on the live database. Logins say what they
+  are: `venue1…22@`, `caterer1…15@`, `performer1…20@` (each owns one business), `admin@`, `customer1…8@`,
+  `newbusiness@` (verified, nothing set up). The seed prints which one is live, pending or hidden.
+- Password `BizimEvent!2026` on a local database only; anywhere else the seed refuses without `SEED_PASSWORD` (12+), so
+  the test admin never has a password that's in the repo. Test data must not reach real people: fictional phone ranges
+  (Ofcom/BNetzA drama numbers) or none, `.example` emails, no social handles, slugs end in `-test`.
+- **Remove the test data before launch** (`pnpm db:seed --remove-demo` or the Database workflow) — Phase 4 makes
+  approved listings public.
+- **Live database:** GitHub → Actions → **Database** workflow (manual): check / set up (migrations + reference data) /
+  add, recreate or remove test data. Needs repo secrets `DATABASE_URL_UNPOOLED` and, for test data, `SEED_PASSWORD`.
+- Without Resend, development writes every email to `.dev-emails/outbox.jsonl` (gitignored); e2e tests open verification
+  links from there.
+- E2E (`tests/e2e`; the `E2E` workflow runs them against `pnpm dev` + a Postgres service, skipping docs-only pushes):
+  copy comes from `messages/*.json`; wrap CSS and text locators in `visible()` — Next keeps recently visited pages
+  mounted but hidden, so their inputs (same ids) are still in the DOM; each browser context gets its own client IP for
+  the auth rate limits (3 logins per IP in quick succession); `E2E_SCREENSHOTS=dir` saves a full-page screenshot per
+  step.
+- Better Auth rate limits: built-in rules (sign-in/sign-up 3 per 10 s per IP and path, else 30/min); `/get-session` is
+  exempt (served from the cookie cache; limiting it made shared IPs look logged out). Upstash adds 10 auth POSTs/min
+  per IP in production.
 
 ## Phase checklist (stop for review after each)
 

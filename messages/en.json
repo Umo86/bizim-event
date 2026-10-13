@@ -77,6 +77,7 @@
     "invalidCredentials": "Email or password is incorrect.",
     "genericError": "Something went wrong. Please try again.",
     "emailNotVerified": "Please verify your email first — we've sent you a new link.",
+    "tooManyAttempts": "Too many attempts. Wait a few seconds and try again.",
     "panelTitle": "Every celebration, wherever you are",
     "panelBody": "Venues, caterers and performers for the Turkish-speaking community, from London to Sydney."
   },

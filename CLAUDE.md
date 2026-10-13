@@ -110,6 +110,16 @@ tests/unit, tests/integration
 - Testimonials on "List your business" come from `src/content/testimonials.ts` and stay hidden until there are real
   quotes — never invent them.
 
+### Cities on the homepage (interim, before Phase 4)
+
+- Featured cities, their taglines and photos live in `src/content/cities.ts` (the seed reads the same list). Photos are
+  free Unsplash License images hotlinked from `images.unsplash.com` (resized via URL params for `srcset`, see
+  `src/lib/unsplash.ts`) and every photographer is credited under the grid. Never use Unsplash+ photos.
+- The homepage grid orders cities for the visitor's country (cookie), so it renders inside `<Suspense>`; no database
+  call is involved.
+- `/[locale]/search` is a "coming soon" page (noindex) so the header tabs, hero form and city tiles never 404. Phase 4
+  replaces it with real search; keep its `type`, `country`, `city` and `place` parameters.
+
 ## Data model (summary)
 
 Better Auth: `user` (+ role customer|business|admin, phone, preferred_locale, country_iso2, marketing opt-ins), `session`,

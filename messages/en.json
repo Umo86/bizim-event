@@ -673,5 +673,23 @@
     "not_deletable": "Only drafts can be deleted. Pause a live listing instead.",
     "not_pending": "This isn't waiting for review any more.",
     "invalid_youtube": "Paste a YouTube video link."
+  },
+  "cities": {
+    "title": "Explore by city",
+    "intro": "From London to Istanbul, Berlin to Sydney: find venues, caterers and performers for your celebration.",
+    "ctaTitle": "Don't see your city?",
+    "ctaBody": "List your business and be the first there.",
+    "photoCredits": "City photos:"
+  },
+  "search": {
+    "metaTitle": "Search",
+    "title": "{type, select, venue {Venues} caterer {Caterers} performer {Performers} other {Venues, caterers and performers}}",
+    "titleInCity": "{type, select, venue {Venues} caterer {Caterers} performer {Performers} other {Venues, caterers and performers}} in {city}",
+    "soonTitle": "Search is coming soon",
+    "soonBody": "Soon you'll be able to compare venues, caterers and performers here, check their prices and availability, and ask them for quotes directly.",
+    "businessTitle": "Run a venue, catering company or act?",
+    "businessBody": "List it now so customers find you as soon as search opens. The first 3 months are free.",
+    "otherCities": "Other cities",
+    "browseCities": "Browse cities"
   }
 }

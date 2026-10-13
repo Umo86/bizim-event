@@ -39,6 +39,7 @@ import {
 } from "../src/db/seed-data/taxonomy";
 import { allCountries } from "../src/lib/countries-data";
 import { slugify } from "../src/lib/slug";
+import { unsplashImage, unsplashProfileUrl } from "../src/lib/unsplash";
 import {
   refreshBusinessVisibility,
   refreshCityCounts,
@@ -173,10 +174,8 @@ async function seedReference(db: DB) {
       .onConflictDoNothing();
   }
 
-  console.log("→ cities");
-  const unsplash = process.env.UNSPLASH_ACCESS_KEY;
+  console.log("→ cities (with their featured photos)");
   for (const c of SEED_CITIES) {
-    const photo = unsplash ? await unsplashPhoto(unsplash, `${c.en} city skyline`) : null;
     const values = {
       countryIso2: c.country,
       googlePlaceId: `seed:${c.key}`,
@@ -189,15 +188,11 @@ async function seedReference(db: DB) {
       taglineEn: c.taglineEn,
       taglineTr: c.taglineTr,
       isFeaturedWorldwide: c.featured,
-      ...(photo
-        ? {
-            heroImageUrl: photo.hero,
-            tileImageUrl: photo.tile,
-            imageSource: "unsplash" as const,
-            imageCreditName: photo.credit,
-            imageCreditUrl: photo.creditUrl,
-          }
-        : {}),
+      heroImageUrl: unsplashImage(c.photo.id, 2000),
+      tileImageUrl: unsplashImage(c.photo.id, 800),
+      imageSource: "unsplash" as const,
+      imageCreditName: c.photo.by,
+      imageCreditUrl: unsplashProfileUrl(c.photo.username),
     };
     await db.insert(s.cities).values(values).onConflictDoUpdate({ target: s.cities.googlePlaceId, set: values });
   }
@@ -242,9 +237,6 @@ async function unsplashSearch(key: string, query: string, perPage = 10): Promise
   } catch {
     return [];
   }
-}
-async function unsplashPhoto(key: string, query: string) {
-  return (await unsplashSearch(key, query, 1))[0] ?? null;
 }
 
 // ── Demo data ───────────────────────────────────────────────────────────────

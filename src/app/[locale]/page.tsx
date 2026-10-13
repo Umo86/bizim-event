@@ -1,16 +1,21 @@
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Search } from "lucide-react";
+import { Suspense } from "react";
 import { Link } from "@/i18n/navigation";
+import { CityGridSkeleton, CityPhotoCredits } from "@/components/cities/city-grid";
+import { VisitorCityGrid } from "@/components/cities/visitor-city-grid";
 import { buttonVariants } from "@/components/ui/button";
 
 /**
- * Phase 0 homepage: brand, hero search shell and the business trial banner.
- * The full Tagvenue-style homepage (photo slideshow, city tiles, live counts,
- * category rows) is built in Phase 4 on top of the seeded data.
+ * Homepage: hero search, city photo tiles (ordered for the visitor's country) and the
+ * business trial banner. The rest of the Tagvenue-style homepage (live counts,
+ * category rows) arrives with search in Phase 4.
  */
 export default async function HomePage() {
+  const locale = (await getLocale()) as "tr" | "en";
   const t = await getTranslations("home");
   const tc = await getTranslations("common");
+  const tci = await getTranslations("cities");
 
   return (
     <>
@@ -20,7 +25,7 @@ export default async function HomePage() {
           <p className="mt-4 max-w-2xl text-lg text-white/90">{t("heroSubtitle")}</p>
 
           <form
-            action="search"
+            action={`/${locale}/search`}
             method="get"
             className="mt-10 grid gap-2 rounded-2xl bg-white p-2 shadow-card sm:grid-cols-2 lg:grid-cols-[1fr_1fr_0.7fr_1.4fr_auto]"
           >
@@ -66,6 +71,19 @@ export default async function HomePage() {
           </form>
           <p className="mt-3 text-sm text-white/80">{t("phaseNote")}</p>
         </div>
+      </section>
+
+      <section aria-labelledby="cities-title" className="mx-auto max-w-7xl px-4 pt-16 sm:px-6">
+        <div className="max-w-2xl">
+          <h2 id="cities-title" className="text-3xl font-bold text-ink sm:text-4xl">
+            {tci("title")}
+          </h2>
+          <p className="mt-3 text-lg text-muted">{tci("intro")}</p>
+        </div>
+        <Suspense fallback={<CityGridSkeleton />}>
+          <VisitorCityGrid locale={locale} />
+        </Suspense>
+        <CityPhotoCredits locale={locale} />
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">

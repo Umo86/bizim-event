@@ -673,5 +673,23 @@
     "not_deletable": "Yalnızca taslaklar silinebilir. Yayındaki ilanı duraklatabilirsiniz.",
     "not_pending": "Bu artık inceleme beklemiyor.",
     "invalid_youtube": "Bir YouTube video bağlantısı yapıştırın."
+  },
+  "cities": {
+    "title": "Şehirleri keşfedin",
+    "intro": "Londra'dan İstanbul'a, Berlin'den Sidney'e kutlamanız için mekan, ikram ve sanatçı bulun.",
+    "ctaTitle": "Şehriniz burada yok mu?",
+    "ctaBody": "İşletmenizi ekleyin, orada ilk siz olun.",
+    "photoCredits": "Şehir fotoğrafları:"
+  },
+  "search": {
+    "metaTitle": "Arama",
+    "title": "{type, select, venue {Mekanlar} caterer {İkram firmaları} performer {Sanatçılar} other {Mekanlar, ikram firmaları ve sanatçılar}}",
+    "titleInCity": "{city} {type, select, venue {mekanlar} caterer {ikram firmaları} performer {sanatçılar} other {mekanlar, ikram firmaları ve sanatçılar}}",
+    "soonTitle": "Arama çok yakında",
+    "soonBody": "Yakında burada mekanları, ikram firmalarını ve sanatçıları karşılaştırabilecek, fiyatlarına ve müsaitlik durumlarına bakıp doğrudan teklif isteyebileceksiniz.",
+    "businessTitle": "Mekanınız, ikram firmanız ya da sahne grubunuz mu var?",
+    "businessBody": "Şimdi ekleyin, arama açılır açılmaz müşteriler sizi bulsun. İlk 3 ay ücretsiz.",
+    "otherCities": "Diğer şehirler",
+    "browseCities": "Şehirlere göz atın"
   }
 }

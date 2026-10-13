@@ -1,0 +1,125 @@
+# Bizim Event — project guide for Claude Code
+
+@AGENTS.md
+
+Bilingual (Turkish default / English) **worldwide marketplace** for the Turkish-speaking community, modelled on Tagvenue
+but with three listing types: **venues, caterers, performers**. Customers search, compare, enquire, receive offers and
+confirm bookings. Businesses list, manage enquiries/calendars and pay a flat subscription. Admins verify and moderate.
+
+## Business model (do not drift from this)
+
+- Businesses pay **£6/month or £60/year per business page**, billed in GBP via **Stripe Billing**. **90-day free trial
+  that starts when an admin APPROVES the business** (not at sign-up), no card needed to start it.
+- **No commission. Customers pay nothing to Bizim Event.** Deposits and balances go directly from customer to business;
+  we only _record_ deposit/balance status. Show: "Payments are made directly to the business. Bizim Event does not handle
+  booking payments." No Stripe Connect.
+- Listings are public while the subscription is `trialing` (trial not ended), `active`, `comped`, or `past_due` inside a
+  7-day grace period; `canceled` stays visible until `current_period_end`. Otherwise hidden — **never deleted**.
+
+## Hard constraints
+
+- **Free tiers only.** Vercel (Hobby while building — move to Pro before the first paid subscription; Hobby is
+  non-commercial), **Neon Postgres** free plan, Cloudflare R2, Pusher sandbox, Upstash Redis, Resend. **No Supabase, no
+  Firebase.**
+- Neon free: 1 GB storage, 100 CU-hours/month, 5 GB egress, scale-to-zero. Over the limit = DB paused until next month.
+  - Never store images/files/large blobs in Postgres — URLs/R2 keys only.
+  - Cache public pages (`"use cache"` + `cacheTag`, revalidate on edits/approvals/reviews/subscription changes).
+  - Never poll the DB on a timer from the browser (chat falls back to 15 s polling only while the tab is visible).
+  - Paginate everything, select only needed columns, index every filter.
+- Vercel Hobby cron = once a day → **one** job at `/api/cron/daily` (Bearer `CRON_SECRET`). Time-based states are also
+  computed **lazily on read** (`src/server/rules.ts`) so a missed run never shows a wrong state.
+- Vercel Image Optimization is **off** (`images.unoptimized`); images are resized to WebP in the browser (400/1200/2000px)
+  and served from R2 with `srcset`.
+
+## Stack
+
+Next.js 16 (App Router, **Cache Components** on, `proxy.ts` not middleware — read `node_modules/next/dist/docs/` before
+using an API you're unsure of) · TypeScript strict · Tailwind v4 (tokens in `src/app/globals.css`) · next-intl (locale via
+`next/root-params`) · Drizzle ORM + drizzle-kit · Neon serverless driver (pooled) / node-postgres (local, CI, migrations)
+· Better Auth (email+password with verification, magic link, Google, organization plugin) · Stripe Billing · R2 via AWS
+SDK presigned PUTs · Pusher · Upstash Redis + ratelimit · Resend + React Email · MapLibre + OpenFreeMap · Google Places
+(behind adapter) · Frankfurter FX · Zod · React Hook Form · Vitest · Playwright.
+
+## Architecture
+
+```
+src/
+  app/[locale]/…           pages (root layout lives here; locales tr | en, tr default, always prefixed)
+  app/api/auth/[...all]    Better Auth handler (rate-limited)
+  app/api/cron/daily       the one daily job
+  proxy.ts                 next-intl locale routing + country cookie from x-vercel-ip-country
+  i18n/                    routing, navigation, request config
+  db/schema/*.ts           Drizzle schema (auth, geo, taxonomy, business, listings, engagement, platform)
+  db/index.ts              getDb() — lazy; Neon Pool for *.neon.tech, else node-postgres
+  server/dal/              DATA-ACCESS LAYER — the only place that queries the DB for app code
+  server/dal/guards.ts     requireUser / requireAdmin / requireBusinessMember / requireBookingParty / requireEnquiryParty
+  server/rules.ts          pure business rules (visibility, lazy expiry, business days, MRR) — unit tested
+  server/internal/         trusted internals called only after authorisation (visibility refresh, daily job)
+  lib/adapters/            email, storage, realtime, sms, geocode, fx, billing, redis, translate, turnstile
+  emails/                  React Email templates (TR/EN via next-intl messages)
+messages/tr.json, en.json  ALL UI strings — never hard-code user-facing text
+drizzle/                   SQL migrations (0000 = extensions + immutable_unaccent + geo_point domain)
+scripts/                   migrate, seed
+tests/unit, tests/integration
+```
+
+### Rules for code changes
+
+1. **Authorisation:** every DAL function takes a `DalContext` (`{ db, user }`) and calls a guard before touching data.
+   Never import `@/db` from components, pages or route handlers — go through `src/server/dal`. Public queries return
+   only `listings.is_public = true` and `reviews.status = 'published'`. Guards return `FORBIDDEN` for both "missing" and
+   "not yours" so IDs can't be probed.
+2. **`listings.is_public` is derived** — only `refreshBusinessVisibility()` writes it. Call it after any change to
+   business status, listing status, or subscription.
+3. **Bilingual content**: business-entered fields are `*_tr` / `*_en`; at least one required; show the other as a
+   fallback with a "shown in Turkish/English" note (`pickLocalized`).
+4. **Turkish text** sorts with `trCollator`, slugs with `slugify` (ı→i, ğ→g …), DB search uses `immutable_unaccent` +
+   `pg_trgm`. Turkish runs ~25% longer than English — size buttons/cards for it.
+5. **Money**: prices are always shown in the listing's own currency; `price_from_gbp` exists only for cross-currency
+   sort/filter; "≈ £X" hints are labelled approximate.
+6. **Time**: store `timestamptz`; show event times in the listing's IANA time zone.
+7. **Accessibility**: brand turquoise `#0E9AA7` and coral `#FF6B5B` fail 4.5:1 behind white text, so text-on-colour uses
+   `*-strong` tokens (`#0B7D87`, `#CC3F31`). Keep the brand hexes for fills/accents.
+8. **Schema change** → edit `src/db/schema`, run `pnpm db:generate`, commit the SQL. CI fails if they drift.
+   `geography(Point,4326)` is exposed as the `geo_point` domain because drizzle-kit quotes custom type names.
+9. **Copy Tagvenue's layout patterns only** — never its logo, wording, colours or images.
+
+## Data model (summary)
+
+Better Auth: `user` (+ role customer|business|admin, phone, preferred_locale, country_iso2, marketing opt-ins), `session`,
+`account`, `verification`, `organization`, `member`, `invitation` · Geo: `countries` (all ISO 3166-1, TR/EN names &
+slugs, default currency, km|mi, is_visible), `cities` (google_place_id unique, TR/EN, centre, timezone, listing_count,
+images), `areas` · Taxonomy (bilingual): `event_types`, `venue_types`, `act_types`, `cuisines`, `service_styles`,
+`languages`, `amenities`, `cancellation_policies` · Business: `businesses`, `subscription_plans`, `plan_prices`,
+`subscriptions` · Listings: `listings` (generated `search_vector`), `listing_capacities`, `listing_prices`,
+`listing_media`, `venue_details`, `caterer_details`, `performer_details`, `listing_amenities`, `listing_event_types`,
+`availability_blocks`, `ical_feeds` · Engagement: `shortlists`, `event_plans`, `enquiries`, `messages`, `viewings`,
+`offers`, `bookings`, `reviews` · Platform: `notifications`, `notification_preferences`, `reports`, `seo_pages`,
+`blog_posts`, `help_articles`, `audit_log`, `processed_webhooks`, `listing_stats_daily`, `fx_rates`, `quick_replies`.
+
+## Commands
+
+```
+pnpm dev | build | lint | typecheck | test
+pnpm db:generate     # SQL migration from schema changes
+pnpm db:migrate      # apply migrations (uses DATABASE_URL_UNPOOLED)
+pnpm db:seed         # countries, taxonomies, demo cities/businesses/listings/bookings, admin user
+```
+
+Integration tests need `TEST_DATABASE_URL` pointing at Postgres with PostGIS (CI uses `postgis/postgis:16-3.4`);
+they are skipped when it's unset.
+
+## Phase checklist (stop for review after each)
+
+- [x] **Phase 0 — Scaffold:** Next.js 16, Tailwind tokens, next-intl tr/en + switcher, country cookie + IP default, Neon
+      via Drizzle, Better Auth (sign up/in/out, magic link, Google, email verification), base layout, provider adapters,
+      CLAUDE.md, .env.example, CI, vercel.json daily cron.
+- [x] **Phase 1 — Data & geography:** full schema, migrations, extensions, indexes, DAL + guards + authorisation tests,
+      all countries, lookup tables, seed script.
+- [ ] Phase 2 — Business onboarding & listings (wizard, Places, R2 uploads, listing editor, approval queue)
+- [ ] Phase 3 — Subscriptions (Stripe Checkout/Portal, webhooks, trial reminders, grace, admin tools, Pricing page)
+- [ ] Phase 4 — Discovery (homepage, PostGIS search + filters, FX hints, MapLibre, detail pages, shortlist, compare)
+- [ ] Phase 5 — Enquiries, chat & bookings (event plans, Pusher chat, viewings, offers, requests, calendars, iCal)
+- [ ] Phase 6 — Trust & comms (reviews, Star Business, response metrics, notifications, reports/disputes)
+- [ ] Phase 7 — Growth & admin (SEO engine, sitemaps, JSON-LD, blog, help, back office, MRR, system usage)
+- [ ] Phase 8 — Hardening (Playwright flows, a11y audit, Lighthouse ≥ 90, security review, full README)

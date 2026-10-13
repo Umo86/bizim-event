@@ -1,26 +1,87 @@
 @import "tailwindcss";
 
+/*
+ * Bizim Event design tokens — the single place to change brand colours and fonts.
+ * Layout patterns follow Tagvenue (white space, one strong accent, big photography);
+ * colours, wording and imagery are our own.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --be-background: #ffffff;
+  --be-section: #f5f7f8;
+  --be-primary: #0e9aa7; /* turquoise */
+  /* The brand hexes fail WCAG AA (4.5:1) behind white text, so text-on-colour
+     uses these darker "-strong" shades; the brand hexes stay for fills and accents. */
+  --be-primary-strong: #0b7d87; /* 4.9:1 on white */
+  --be-primary-deeper: #096a73;
+  --be-primary-soft: #e3f4f5;
+  --be-cta: #ff6b5b; /* coral */
+  --be-cta-strong: #cc3f31; /* 4.9:1 on white */
+  --be-cta-deeper: #b33628;
+  --be-text: #1f2933;
+  --be-muted: #52606d;
+  --be-border: #e4e7eb;
+  --be-star: #f5a623;
+  --be-danger: #c81e1e;
+  --be-success: #0f8a5f;
+  --be-radius: 1rem;
+  --be-shadow: 0 1px 2px rgb(31 41 51 / 0.06), 0 8px 24px rgb(31 41 51 / 0.06);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--be-background);
+  --color-section: var(--be-section);
+  --color-primary: var(--be-primary);
+  --color-primary-strong: var(--be-primary-strong);
+  --color-primary-soft: var(--be-primary-soft);
+  --color-cta: var(--be-cta);
+  --color-cta-strong: var(--be-cta-strong);
+  --color-cta-deeper: var(--be-cta-deeper);
+  --color-primary-deeper: var(--be-primary-deeper);
+  --color-ink: var(--be-text);
+  --color-muted: var(--be-muted);
+  --color-line: var(--be-border);
+  --color-star: var(--be-star);
+  --color-danger: var(--be-danger);
+  --color-success: var(--be-success);
+  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --shadow-card: var(--be-shadow);
+  --radius-card: var(--be-radius);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--be-background);
+  color: var(--be-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-heading);
+  letter-spacing: -0.01em;
+}
+
+/* WCAG 2.2: always-visible keyboard focus */
+:focus-visible {
+  outline: 3px solid var(--be-primary-strong);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -1,0 +1,108 @@
+{
+  "meta": {
+    "title": "Bizim Event — kutlamanız için mekan, ikram ve sanatçılar",
+    "description": "Dünyanın her yerinde düğün salonları, kına gecesi mekanları, Türk catering firmaları, davul-zurna ve düğün orkestraları bulun. Teklif isteyin, karşılaştırın, doğrudan rezervasyon yapın."
+  },
+  "common": {
+    "brand": "Bizim Event",
+    "venues": "Mekanlar",
+    "caterers": "İkram / Catering",
+    "performers": "Sanatçılar",
+    "eventTypes": "Etkinlik türleri",
+    "locations": "Ülkeler ve şehirler",
+    "listYourBusiness": "İşletmenizi ekleyin",
+    "logIn": "Giriş yap",
+    "signUp": "Kayıt ol",
+    "logOut": "Çıkış yap",
+    "account": "Hesabım",
+    "language": "Dil",
+    "country": "Ülke",
+    "search": "Ara",
+    "loading": "Yükleniyor…",
+    "save": "Kaydet",
+    "cancel": "Vazgeç",
+    "continue": "Devam",
+    "back": "Geri",
+    "skipToContent": "İçeriğe geç",
+    "or": "veya",
+    "comingSoon": "Çok yakında",
+    "shownInOtherLanguage": "İngilizce gösteriliyor"
+  },
+  "home": {
+    "heroTitle": "Her kutlama, tek bir yerde",
+    "heroSubtitle": "Düğün, kına gecesi, nişan ve daha fazlası için mekanlar, ikram firmaları ve sanatçılar — dünyanın her yerinde.",
+    "whatYouNeed": "Ne arıyorsunuz?",
+    "eventType": "Etkinlik türü",
+    "guests": "Misafir sayısı",
+    "location": "Şehir, bölge veya ülke",
+    "date": "Tarih (isteğe bağlı)",
+    "searchButton": "Ara",
+    "trialBanner": "İşletmenizi ekleyin — ilk 3 ay ücretsiz",
+    "trialBannerCta": "Hemen başlayın",
+    "phaseNote": "Arama, sonraki geliştirme aşamasında yayına girecek.",
+    "eventTypePlaceholder": "Düğün, kına…",
+    "guestsPlaceholder": "150",
+    "locationPlaceholder": "Londra, İstanbul, Berlin…"
+  },
+  "footer": {
+    "about": "Hakkımızda",
+    "howItWorks": "Nasıl çalışır",
+    "forBusinesses": "İşletmeler için",
+    "pricing": "Fiyatlandırma",
+    "help": "Yardım merkezi",
+    "contact": "İletişim",
+    "blog": "Blog",
+    "terms": "Kullanım koşulları",
+    "privacy": "Gizlilik",
+    "cookies": "Çerezler",
+    "rights": "Tüm hakları saklıdır.",
+    "tagline": "Bizim Event — bizim etkinliğimiz, bizim topluluğumuz."
+  },
+  "auth": {
+    "signInTitle": "Bizim Event'e giriş yapın",
+    "signUpTitle": "Hesabınızı oluşturun",
+    "name": "Ad soyad",
+    "email": "E-posta",
+    "password": "Şifre",
+    "passwordHint": "En az 8 karakter",
+    "signInButton": "Giriş yap",
+    "signUpButton": "Hesap oluştur",
+    "magicLinkButton": "Bana giriş bağlantısı gönder",
+    "magicLinkSent": "E-postanızı kontrol edin — size bir giriş bağlantısı gönderdik.",
+    "google": "Google ile devam et",
+    "noAccount": "Henüz hesabınız yok mu?",
+    "haveAccount": "Zaten hesabınız var mı?",
+    "verifyEmailSent": "Doğrulama e-postası gönderdik. Hesabınızı etkinleştirmek için bağlantıya tıklayın.",
+    "invalidCredentials": "E-posta veya şifre hatalı.",
+    "genericError": "Bir şeyler ters gitti. Lütfen tekrar deneyin.",
+    "emailNotVerified": "Lütfen önce e-postanızı doğrulayın — size yeni bir bağlantı gönderdik."
+  },
+  "account": {
+    "title": "Hesabım",
+    "signedInAs": "{email} olarak giriş yapıldı",
+    "role": "Hesap türü: {role}",
+    "phaseNote": "Talepler, rezervasyonlar, favoriler ve etkinlik planları sonraki aşamalarda gelecek."
+  },
+  "roles": {
+    "customer": "Müşteri",
+    "business": "İşletme sahibi",
+    "admin": "Yönetici"
+  },
+  "errors": {
+    "notFoundTitle": "Sayfa bulunamadı",
+    "notFoundBody": "Aradığınız sayfa yok ya da taşınmış.",
+    "goHome": "Ana sayfaya dön"
+  },
+  "email": {
+    "verifySubject": "Bizim Event e-postanızı doğrulayın",
+    "verifyBody": "E-posta adresinizi doğrulamak için aşağıdaki butona tıklayın.",
+    "verifyButton": "E-postayı doğrula",
+    "magicSubject": "Bizim Event giriş bağlantınız",
+    "magicBody": "Giriş yapmak için aşağıdaki butona tıklayın. Bağlantı 10 dakika içinde geçersiz olur.",
+    "magicButton": "Giriş yap",
+    "resetSubject": "Bizim Event şifrenizi sıfırlayın",
+    "resetBody": "Yeni bir şifre belirlemek için aşağıdaki butona tıklayın.",
+    "resetButton": "Şifreyi sıfırla",
+    "ignore": "Bu isteği siz yapmadıysanız bu e-postayı yok sayabilirsiniz."
+  }
+}

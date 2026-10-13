@@ -24,7 +24,8 @@ export default defineConfig({
   // slow — slower still on CI runners.
   timeout: (process.env.CI ? 10 : 6) * 60_000,
   expect: { timeout: 20_000 },
-  reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : [["list"]],
+  // On GitHub, "github" adds a run summary and failure annotations to the commit.
+  reporter: process.env.CI ? [["github"], ["list"], ["html", { open: "never" }]] : [["list"]],
   use: {
     baseURL,
     trace: "retain-on-failure",

@@ -3,6 +3,8 @@ import { Suspense } from "react";
 import { Link } from "@/i18n/navigation";
 import { buttonVariants } from "@/components/ui/button";
 import { ChooseType } from "@/components/business/choose-type";
+import { onPhotoText, PhotoBackdrop } from "@/components/cities/photo-backdrop";
+import { backdrop } from "@/content/cities";
 import { getSessionUser } from "@/server/session";
 import { asLocale } from "@/server/page-helpers";
 
@@ -16,15 +18,19 @@ export default async function BusinessStartPage(props: PageProps<"/[locale]/busi
   const { locale } = await props.params;
   const t = await getTranslations({ locale: asLocale(locale), namespace: "businessStart" });
   return (
-    <section className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
-      <h1 className="text-3xl font-bold text-ink sm:text-4xl">{t("title")}</h1>
-      <p className="mt-3 max-w-2xl text-muted">{t("intro")}</p>
-      <div className="mt-10">
+    <>
+      <PhotoBackdrop backdrop={backdrop("businessStart")} overlay="left" priority>
+        <div className={`mx-auto max-w-5xl px-4 pb-16 pt-14 sm:px-6 sm:pb-20 sm:pt-20 ${onPhotoText}`}>
+          <h1 className="text-3xl font-bold text-white sm:text-4xl">{t("title")}</h1>
+          <p className="mt-3 max-w-2xl text-lg text-white">{t("intro")}</p>
+        </div>
+      </PhotoBackdrop>
+      <section className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-12">
         <Suspense fallback={<div className="h-56 animate-pulse rounded-2xl bg-section" />}>
           <StartGate locale={asLocale(locale)} />
         </Suspense>
-      </div>
-    </section>
+      </section>
+    </>
   );
 }
 

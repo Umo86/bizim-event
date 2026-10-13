@@ -76,7 +76,9 @@
     "verifyEmailSent": "We've sent a verification email. Click the link to activate your account.",
     "invalidCredentials": "Email or password is incorrect.",
     "genericError": "Something went wrong. Please try again.",
-    "emailNotVerified": "Please verify your email first — we've sent you a new link."
+    "emailNotVerified": "Please verify your email first — we've sent you a new link.",
+    "panelTitle": "Every celebration, wherever you are",
+    "panelBody": "Venues, caterers and performers for the Turkish-speaking community, from London to Sydney."
   },
   "account": {
     "title": "My account",
@@ -679,7 +681,8 @@
     "intro": "From London to Istanbul, Berlin to Sydney: find venues, caterers and performers for your celebration.",
     "ctaTitle": "Don't see your city?",
     "ctaBody": "List your business and be the first there.",
-    "photoCredits": "City photos:"
+    "photoCredits": "City photos:",
+    "photoCaption": "Photo: {name}, Unsplash ({city})"
   },
   "search": {
     "metaTitle": "Search",

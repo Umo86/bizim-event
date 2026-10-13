@@ -117,6 +117,11 @@ tests/unit, tests/integration
   `src/lib/unsplash.ts`) and every photographer is credited under the grid. Never use Unsplash+ photos.
 - The homepage grid orders cities for the visitor's country (cookie), so it renders inside `<Suspense>`; no database
   call is involved.
+- Page banners use `<PhotoBackdrop>` (`src/components/cities/photo-backdrop.tsx`) with a key from `BACKDROPS` in
+  `src/content/cities.ts` (homepage hero = London). Its overlays keep white text at 4.5:1 over any photo; put body
+  text only where the tint is 85%+ (the left of a `left` overlay, anywhere on `even`, the bottom of `bottom`). Forms,
+  the setup wizard and admin screens stay photo-free so they read quickly.
+- Unknown URLs hit `[locale]/[...rest]` → `notFound()`, so they get the styled, localised 404.
 - `/[locale]/search` is a "coming soon" page (noindex) so the header tabs, hero form and city tiles never 404. Phase 4
   replaces it with real search; keep its `type`, `country`, `city` and `place` parameters.
 

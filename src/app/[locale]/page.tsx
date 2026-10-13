@@ -3,8 +3,10 @@ import { Search } from "lucide-react";
 import { Suspense } from "react";
 import { Link } from "@/i18n/navigation";
 import { CityGridSkeleton, CityPhotoCredits } from "@/components/cities/city-grid";
+import { onPhotoText, PhotoBackdrop } from "@/components/cities/photo-backdrop";
 import { VisitorCityGrid } from "@/components/cities/visitor-city-grid";
 import { buttonVariants } from "@/components/ui/button";
+import { backdrop } from "@/content/cities";
 
 /**
  * Homepage: hero search, city photo tiles (ordered for the visitor's country) and the
@@ -19,10 +21,12 @@ export default async function HomePage() {
 
   return (
     <>
-      <section className="relative isolate overflow-hidden bg-gradient-to-br from-primary-deeper via-primary-strong to-primary">
-        <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28">
-          <h1 className="max-w-3xl text-4xl font-extrabold leading-tight text-white sm:text-5xl">{t("heroTitle")}</h1>
-          <p className="mt-4 max-w-2xl text-lg text-white/90">{t("heroSubtitle")}</p>
+      <PhotoBackdrop backdrop={backdrop("homeHero")} overlay="left" priority>
+        <div className="mx-auto max-w-7xl px-4 pb-24 pt-20 sm:px-6 sm:pb-32 sm:pt-28">
+          <h1 className={`max-w-3xl text-4xl font-extrabold leading-tight text-white sm:text-5xl ${onPhotoText}`}>
+            {t("heroTitle")}
+          </h1>
+          <p className={`mt-4 max-w-2xl text-lg text-white ${onPhotoText}`}>{t("heroSubtitle")}</p>
 
           <form
             action={`/${locale}/search`}
@@ -69,9 +73,9 @@ export default async function HomePage() {
               {t("searchButton")}
             </button>
           </form>
-          <p className="mt-3 text-sm text-white/80">{t("phaseNote")}</p>
+          <p className={`mt-3 text-sm text-white ${onPhotoText}`}>{t("phaseNote")}</p>
         </div>
-      </section>
+      </PhotoBackdrop>
 
       <section aria-labelledby="cities-title" className="mx-auto max-w-7xl px-4 pt-16 sm:px-6">
         <div className="max-w-2xl">
@@ -87,12 +91,20 @@ export default async function HomePage() {
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
-        <div className="flex flex-col items-start justify-between gap-6 rounded-2xl bg-primary-soft p-8 sm:flex-row sm:items-center">
-          <h2 className="text-2xl font-bold text-ink">{t("trialBanner")}</h2>
-          <Link href="/list-your-business" className={buttonVariants({ variant: "cta", size: "lg" })}>
-            {t("trialBannerCta")}
-          </Link>
-        </div>
+        <PhotoBackdrop
+          as="div"
+          backdrop={backdrop("homeBusiness")}
+          overlay="left"
+          sizes="(min-width: 1280px) 1232px, 100vw"
+          className="rounded-2xl"
+        >
+          <div className="flex flex-col items-start justify-between gap-6 px-8 pb-12 pt-10 sm:flex-row sm:items-center sm:py-14">
+            <h2 className={`max-w-xl text-2xl font-bold text-white sm:text-3xl ${onPhotoText}`}>{t("trialBanner")}</h2>
+            <Link href="/list-your-business" className={buttonVariants({ variant: "cta", size: "lg" })}>
+              {t("trialBannerCta")}
+            </Link>
+          </div>
+        </PhotoBackdrop>
       </section>
     </>
   );

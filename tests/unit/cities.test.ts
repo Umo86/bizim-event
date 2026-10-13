@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { citiesForVisitor, FEATURED_CITIES, findFeaturedCity } from "@/content/cities";
+import {
+  backdrop,
+  BACKDROPS,
+  citiesForVisitor,
+  FEATURED_CITIES,
+  featuredCityFor,
+  findFeaturedCity,
+  type BackdropKey,
+} from "@/content/cities";
 import { slugify } from "@/lib/slug";
 import { unsplashImage, unsplashSrcSet } from "@/lib/unsplash";
 
@@ -50,6 +58,28 @@ describe("featured cities", () => {
     expect(findFeaturedCity({ text: "Sidney" })?.key).toBe("sydney");
     expect(findFeaturedCity({ text: "Narnia" })).toBeUndefined();
     expect(findFeaturedCity({})).toBeUndefined();
+  });
+
+  it("every page backdrop resolves to a featured city and a valid photo", () => {
+    for (const key of Object.keys(BACKDROPS) as BackdropKey[]) {
+      const b = backdrop(key);
+      expect(b.photo.id).toMatch(/^photo-\d{10,13}-[0-9a-f]{12}$/);
+      expect(FEATURED_CITIES).toContain(b.city);
+    }
+    expect(backdrop("homeHero").city.key).toBe("london");
+    // The homepage banners use their own photos, not the tiles shown just below them.
+    const tilePhotos = new Set(FEATURED_CITIES.map((c) => c.photo.id));
+    expect(tilePhotos.has(backdrop("homeHero").photo.id)).toBe(false);
+    expect(tilePhotos.has(backdrop("homeBusiness").photo.id)).toBe(false);
+  });
+
+  it("pictures a business's own city, else its country's best-known one", () => {
+    expect(featuredCityFor("GB", "London")?.key).toBe("london");
+    expect(featuredCityFor("gb", "Manchester")?.key).toBe("manchester");
+    expect(featuredCityFor("TR", "Bursa")?.key).toBe("istanbul");
+    expect(featuredCityFor("CA", "London")?.key).toBe("toronto"); // London, Ontario is not London, UK
+    expect(featuredCityFor("JP", "Tokyo")).toBeUndefined();
+    expect(featuredCityFor(null, "London")).toBeUndefined();
   });
 
   it("builds resized Unsplash URLs for srcset", () => {

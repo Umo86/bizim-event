@@ -2,9 +2,11 @@ import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { Link, redirect } from "@/i18n/navigation";
 import { SignOutButton } from "@/components/auth/sign-out-button";
+import { PhotoBackdrop } from "@/components/cities/photo-backdrop";
 import { buttonVariants } from "@/components/ui/button";
 import { getSessionUser } from "@/server/session";
 import { Card } from "@/components/ui/input";
+import { backdrop } from "@/content/cities";
 import { locale as rootLocale } from "next/root-params";
 
 export async function generateMetadata() {
@@ -48,10 +50,13 @@ async function AccountDetails() {
 
 export default function AccountPage() {
   return (
-    <section className="mx-auto max-w-2xl px-4 py-16">
-      <Suspense fallback={<Card className="h-48 animate-pulse" />}>
-        <AccountDetails />
-      </Suspense>
-    </section>
+    <>
+      <PhotoBackdrop backdrop={backdrop("account")} overlay="none" priority creditAt="top" className="h-48 sm:h-64" />
+      <section className="relative mx-auto -mt-20 max-w-2xl px-4 pb-16 sm:-mt-28">
+        <Suspense fallback={<Card className="h-48 animate-pulse" />}>
+          <AccountDetails />
+        </Suspense>
+      </section>
+    </>
   );
 }

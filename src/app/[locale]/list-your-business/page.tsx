@@ -3,6 +3,8 @@ import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { buttonVariants } from "@/components/ui/button";
 import { CommissionCalculator } from "@/components/business/commission-calculator";
+import { onPhotoText, PhotoBackdrop } from "@/components/cities/photo-backdrop";
+import { backdrop } from "@/content/cities";
 import { TESTIMONIALS } from "@/content/testimonials";
 import { asLocale } from "@/server/page-helpers";
 
@@ -25,11 +27,11 @@ export default async function ListYourBusinessPage(props: PageProps<"/[locale]/l
 
   return (
     <>
-      <section className="bg-gradient-to-br from-primary-deeper via-primary-strong to-primary">
-        <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[1.1fr_1fr] lg:py-24">
-          <div className="text-white">
+      <PhotoBackdrop backdrop={backdrop("businessHero")} overlay="left" priority>
+        <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 pb-20 pt-16 sm:px-6 lg:grid-cols-[1.1fr_1fr] lg:pb-28 lg:pt-24">
+          <div className={`text-white ${onPhotoText}`}>
             <h1 className="max-w-2xl text-4xl font-extrabold leading-tight sm:text-5xl">{t("heroTitle")}</h1>
-            <p className="mt-5 max-w-xl text-lg text-white/90">{t("heroBody")}</p>
+            <p className="mt-5 max-w-xl text-lg text-white">{t("heroBody")}</p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link href="/business/start" className={buttonVariants({ variant: "cta", size: "lg" })}>
                 {t("heroCta")}
@@ -38,11 +40,11 @@ export default async function ListYourBusinessPage(props: PageProps<"/[locale]/l
                 {t("heroSecondary")}
               </a>
             </div>
-            <p className="mt-4 text-sm text-white/85">{t("priceNote")}</p>
+            <p className="mt-4 text-sm text-white">{t("priceNote")}</p>
           </div>
           <CommissionCalculator />
         </div>
-      </section>
+      </PhotoBackdrop>
 
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
         <h2 className="text-3xl font-bold text-ink">{t("whoTitle")}</h2>
@@ -58,25 +60,25 @@ export default async function ListYourBusinessPage(props: PageProps<"/[locale]/l
         </div>
       </section>
 
-      <section id="how" className="bg-section">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
-          <h2 className="text-3xl font-bold text-ink">{t("howTitle")}</h2>
+      <PhotoBackdrop id="how" backdrop={backdrop("businessHow")} overlay="even">
+        <div className={`mx-auto max-w-7xl px-4 pb-20 pt-16 text-white sm:px-6 ${onPhotoText}`}>
+          <h2 className="text-3xl font-bold">{t("howTitle")}</h2>
           <ol className="mt-8 grid gap-8 md:grid-cols-3">
             {steps.map((n) => (
               <li key={n}>
                 <span
-                  className="flex size-10 items-center justify-center rounded-full bg-primary-strong font-heading text-lg font-bold text-white"
+                  className="flex size-10 items-center justify-center rounded-full bg-white font-heading text-lg font-bold text-primary-deeper [text-shadow:none]"
                   aria-hidden
                 >
                   {n}
                 </span>
-                <h3 className="mt-4 text-xl font-bold text-ink">{t(`how${n}Title`)}</h3>
-                <p className="mt-2 text-muted">{t(`how${n}Body`)}</p>
+                <h3 className="mt-4 text-xl font-bold">{t(`how${n}Title`)}</h3>
+                <p className="mt-2">{t(`how${n}Body`)}</p>
               </li>
             ))}
           </ol>
         </div>
-      </section>
+      </PhotoBackdrop>
 
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
         <h2 className="text-3xl font-bold text-ink">{t("pricingTitle")}</h2>
@@ -133,13 +135,15 @@ export default async function ListYourBusinessPage(props: PageProps<"/[locale]/l
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-16 text-center sm:px-6">
-        <h2 className="text-3xl font-bold text-ink">{t("finalTitle")}</h2>
-        <p className="mx-auto mt-3 max-w-xl text-muted">{t("finalBody")}</p>
-        <Link href="/business/start" className={buttonVariants({ variant: "cta", size: "lg", className: "mt-8" })}>
-          {t("heroCta")}
-        </Link>
-      </section>
+      <PhotoBackdrop backdrop={backdrop("businessFinal")} overlay="even">
+        <div className={`mx-auto max-w-7xl px-4 pb-24 pt-20 text-center sm:px-6 ${onPhotoText}`}>
+          <h2 className="text-3xl font-bold text-white sm:text-4xl">{t("finalTitle")}</h2>
+          <p className="mx-auto mt-3 max-w-xl text-lg text-white">{t("finalBody")}</p>
+          <Link href="/business/start" className={buttonVariants({ variant: "cta", size: "lg", className: "mt-8" })}>
+            {t("heroCta")}
+          </Link>
+        </div>
+      </PhotoBackdrop>
     </>
   );
 }

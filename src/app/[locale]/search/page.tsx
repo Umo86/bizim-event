@@ -1,13 +1,12 @@
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
-import { preconnect } from "react-dom";
 import { Link } from "@/i18n/navigation";
 import { CityGridSkeleton, CityPhotoCredits } from "@/components/cities/city-grid";
+import { onPhotoText, PhotoBackdrop } from "@/components/cities/photo-backdrop";
 import { VisitorCityGrid } from "@/components/cities/visitor-city-grid";
 import { buttonVariants } from "@/components/ui/button";
-import { findFeaturedCity, type FeaturedCity } from "@/content/cities";
-import { unsplashImage, unsplashSrcSet } from "@/lib/unsplash";
-import { asLocale } from "@/server/page-helpers";
+import { citiesForVisitor, findFeaturedCity, type FeaturedCity } from "@/content/cities";
+import { asLocale, visitorCountry } from "@/server/page-helpers";
 
 /**
  * Interim search page. Search itself (PostGIS, filters, map) lands in Phase 4; until
@@ -45,17 +44,16 @@ async function SearchComingSoon({ params, searchParams }: PageProps<"/[locale]/s
     ? t("titleInCity", { type: type ?? "other", city: locale === "tr" ? city.inTr : city.en })
     : t("title", { type: type ?? "other" });
 
+  // No city chosen: picture the visitor's own city (from the country cookie) instead.
+  const pictured = city ?? citiesForVisitor(await visitorCountry(), 1)[0];
+
   return (
     <>
-      {city ? (
-        <CityBanner city={city} title={title} locale={locale} />
-      ) : (
-        <section className="bg-gradient-to-br from-primary-deeper via-primary-strong to-primary">
-          <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20">
-            <h1 className="max-w-3xl text-3xl font-extrabold leading-tight text-white sm:text-5xl">{title}</h1>
-          </div>
-        </section>
-      )}
+      <CityBanner
+        city={pictured}
+        title={title}
+        tagline={city ? (locale === "tr" ? city.taglineTr : city.taglineEn) : null}
+      />
 
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
         <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
@@ -93,27 +91,16 @@ async function SearchComingSoon({ params, searchParams }: PageProps<"/[locale]/s
   );
 }
 
-function CityBanner({ city, title, locale }: { city: FeaturedCity; title: string; locale: "tr" | "en" }) {
-  preconnect("https://images.unsplash.com");
+function CityBanner({ city, title, tagline }: { city: FeaturedCity; title: string; tagline: string | null }) {
   return (
-    <section className="relative isolate overflow-hidden bg-primary-deeper">
-      {/* eslint-disable-next-line @next/next/no-img-element -- Unsplash's CDN resizes; srcset below */}
-      <img
-        src={unsplashImage(city.photo.id, 1600)}
-        srcSet={unsplashSrcSet(city.photo.id, [800, 1200, 1600, 2000, 2400])}
-        sizes="100vw"
-        alt=""
-        fetchPriority="high"
-        decoding="async"
-        style={city.photo.focus ? { objectPosition: city.photo.focus } : undefined}
-        className="absolute inset-0 -z-10 size-full object-cover"
-      />
-      <span aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-t from-black/80 via-black/35 to-black/10" />
-      <div className="mx-auto flex min-h-72 max-w-7xl flex-col justify-end px-4 pb-10 pt-24 sm:min-h-96 sm:px-6">
+    <PhotoBackdrop backdrop={{ city, photo: city.photo }} overlay="bottom" priority>
+      <div
+        className={`mx-auto flex min-h-72 max-w-7xl flex-col justify-end px-4 pb-12 pt-24 sm:min-h-96 sm:px-6 ${onPhotoText}`}
+      >
         <h1 className="max-w-3xl text-3xl font-extrabold leading-tight text-white sm:text-5xl">{title}</h1>
-        <p className="mt-3 max-w-2xl text-lg text-white">{locale === "tr" ? city.taglineTr : city.taglineEn}</p>
+        {tagline ? <p className="mt-3 max-w-2xl text-lg text-white">{tagline}</p> : null}
       </div>
-    </section>
+    </PhotoBackdrop>
   );
 }
 

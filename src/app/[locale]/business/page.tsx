@@ -4,6 +4,8 @@ import { Suspense } from "react";
 import { Link } from "@/i18n/navigation";
 import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/business/status-badge";
+import { onPhotoText, PhotoBackdrop } from "@/components/cities/photo-backdrop";
+import { backdrop } from "@/content/cities";
 import { pickLocalized } from "@/lib/utils";
 import { businessWrite } from "@/server/dal";
 import { asLocale, requirePageContext } from "@/server/page-helpers";
@@ -14,13 +16,25 @@ export async function generateMetadata(props: PageProps<"/[locale]/business">) {
   return { title: t("title"), robots: { index: false } };
 }
 
-export default function MyBusinessesPage(props: PageProps<"/[locale]/business">) {
+export default async function MyBusinessesPage(props: PageProps<"/[locale]/business">) {
+  const t = await getTranslations("businessList");
   return (
-    <section className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
-      <Suspense fallback={<div className="h-64 animate-pulse rounded-2xl bg-section" />}>
-        <MyBusinesses {...props} />
-      </Suspense>
-    </section>
+    <>
+      <PhotoBackdrop backdrop={backdrop("businessList")} overlay="left" priority>
+        <div className="mx-auto flex max-w-5xl flex-wrap items-end justify-between gap-4 px-4 pb-14 pt-14 sm:px-6 sm:pt-20">
+          <h1 className={`text-3xl font-bold text-white sm:text-4xl ${onPhotoText}`}>{t("title")}</h1>
+          <Link href="/business/start" className={buttonVariants({ variant: "cta" })}>
+            <Plus className="size-4" aria-hidden />
+            {t("add")}
+          </Link>
+        </div>
+      </PhotoBackdrop>
+      <section className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+        <Suspense fallback={<div className="h-64 animate-pulse rounded-2xl bg-section" />}>
+          <MyBusinesses {...props} />
+        </Suspense>
+      </section>
+    </>
   );
 }
 
@@ -33,17 +47,10 @@ async function MyBusinesses({ params }: PageProps<"/[locale]/business">) {
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold text-ink">{t("title")}</h1>
-        <Link href="/business/start" className={buttonVariants({ variant: "cta" })}>
-          <Plus className="size-4" aria-hidden />
-          {t("add")}
-        </Link>
-      </div>
       {rows.length === 0 ? (
-        <p className="mt-10 rounded-2xl bg-section p-8 text-center text-muted">{t("empty")}</p>
+        <p className="rounded-2xl bg-section p-8 text-center text-muted">{t("empty")}</p>
       ) : (
-        <ul className="mt-8 grid gap-4 md:grid-cols-2">
+        <ul className="grid gap-4 md:grid-cols-2">
           {rows.map((b) => {
             const name =
               pickLocalized(locale, b.nameTr, b.nameEn).value ||

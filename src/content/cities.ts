@@ -274,7 +274,62 @@ export function findFeaturedCity(opts: { key?: string | null; country?: string |
   return FEATURED_CITIES.find((c) => fold(c.en) === text || fold(c.tr) === text || c.key === text);
 }
 
+/**
+ * Backdrop photos for page banners. Most reuse a featured city's photo; the homepage
+ * uses its own London and Istanbul shots so they don't repeat the city tiles below.
+ */
+export const BACKDROPS = {
+  homeHero: {
+    city: "london",
+    photo: { id: "photo-1549483249-f0b359d1e289", page: "7ojyp-IXW7w", by: "Alev Takil", username: "alevtakil" },
+  },
+  homeBusiness: {
+    city: "istanbul",
+    photo: { id: "photo-1589561454226-796a8aa89b05", page: "WA1u0scVLZU", by: "Engin Yapici", username: "yapici" },
+  },
+  businessHero: { city: "berlin" },
+  businessHow: { city: "toronto" },
+  businessFinal: { city: "amsterdam" },
+  businessStart: { city: "izmir" },
+  businessList: { city: "dubai" },
+  signIn: { city: "istanbul" },
+  signUp: { city: "paris" },
+  account: { city: "sydney" },
+  notFound: { city: "new-york" },
+} satisfies Record<string, { city: string; photo?: UnsplashPhoto }>;
+
+export type BackdropKey = keyof typeof BACKDROPS;
+export type Backdrop = { city: FeaturedCity; photo: UnsplashPhoto };
+
+export function backdrop(key: BackdropKey): Backdrop {
+  const entry: { city: string; photo?: UnsplashPhoto } = BACKDROPS[key];
+  const city = FEATURED_CITIES.find((c) => c.key === entry.city);
+  if (!city) throw new Error(`Unknown backdrop city: ${entry.city}`);
+  return { city, photo: entry.photo ?? city.photo };
+}
+
+/**
+ * The featured city to picture for a place: the city itself when we feature it,
+ * otherwise the first featured city in the same country, otherwise none.
+ */
+export function featuredCityFor(countryIso2: string | null | undefined, cityNameEn?: string | null) {
+  const country = countryIso2?.toUpperCase();
+  if (!country) return undefined;
+  const exact = cityNameEn ? findFeaturedCity({ text: cityNameEn }) : undefined;
+  if (exact && exact.country === country) return exact;
+  return (
+    FEATURED_CITIES.find((c) => c.country === country && c.featured) ??
+    FEATURED_CITIES.find((c) => c.country === country)
+  );
+}
+
 /** Lower-case, Turkish-aware, accent-free: "İstanbul" → "istanbul", "Londra " → "londra". */
 function fold(s: string) {
-  return s.trim().toLocaleLowerCase("tr").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/ı/g, "i").replace(/\s+/g, "-");
+  return s
+    .trim()
+    .toLocaleLowerCase("tr")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ı/g, "i")
+    .replace(/\s+/g, "-");
 }

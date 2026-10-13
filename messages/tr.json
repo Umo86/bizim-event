@@ -76,7 +76,9 @@
     "verifyEmailSent": "Doğrulama e-postası gönderdik. Hesabınızı etkinleştirmek için bağlantıya tıklayın.",
     "invalidCredentials": "E-posta veya şifre hatalı.",
     "genericError": "Bir şeyler ters gitti. Lütfen tekrar deneyin.",
-    "emailNotVerified": "Lütfen önce e-postanızı doğrulayın — size yeni bir bağlantı gönderdik."
+    "emailNotVerified": "Lütfen önce e-postanızı doğrulayın — size yeni bir bağlantı gönderdik.",
+    "panelTitle": "Nerede olursanız olun, her kutlama için",
+    "panelBody": "Türkçe konuşan topluluk için mekan, ikram ve sanatçılar; Londra'dan Sidney'e."
   },
   "account": {
     "title": "Hesabım",
@@ -679,7 +681,8 @@
     "intro": "Londra'dan İstanbul'a, Berlin'den Sidney'e kutlamanız için mekan, ikram ve sanatçı bulun.",
     "ctaTitle": "Şehriniz burada yok mu?",
     "ctaBody": "İşletmenizi ekleyin, orada ilk siz olun.",
-    "photoCredits": "Şehir fotoğrafları:"
+    "photoCredits": "Şehir fotoğrafları:",
+    "photoCaption": "Fotoğraf: {name}, Unsplash ({city})"
   },
   "search": {
     "metaTitle": "Arama",

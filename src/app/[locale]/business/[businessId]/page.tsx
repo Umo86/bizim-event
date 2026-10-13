@@ -6,6 +6,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { Notice, ProgressBar } from "@/components/ui/form";
 import { AddListingButton } from "@/components/business/listing-actions";
 import { StatusBadge } from "@/components/business/status-badge";
+import { onPhotoText, PhotoBackdrop } from "@/components/cities/photo-backdrop";
+import { featuredCityFor } from "@/content/cities";
 import { WIZARD_STEPS, type ListingType } from "@/lib/listing-config";
 import { pickLocalized } from "@/lib/utils";
 import { businessWrite } from "@/server/dal";
@@ -43,22 +45,43 @@ async function Overview({ params, searchParams }: PageProps<"/[locale]/business/
     WIZARD_STEPS.find((s) => view.completeness.missingRequired.some((m) => m.step === s)) ?? "review";
   const city = locale === "tr" ? view.city?.nameTr : view.city?.nameEn;
   const canAddListing = business.status !== "suspended" && business.status !== "rejected";
+  // The business's city photo (or its country's best-known city) once an address is set.
+  const pictured = featuredCityFor(view.city?.countryIso2 ?? business.countryIso2, view.city?.nameEn);
+  const heading = (onPhoto: boolean) => (
+    <>
+      <div className={onPhoto ? `min-w-0 text-white ${onPhotoText}` : "min-w-0"}>
+        <p className={onPhoto ? "text-sm" : "text-sm text-muted"}>{tl(business.type as ListingType)}</p>
+        <h1 className={onPhoto ? "text-3xl font-bold sm:text-4xl" : "text-3xl font-bold text-ink"}>{name}</h1>
+        {city ? (
+          <p className={onPhoto ? "mt-1 flex items-center gap-1.5" : "mt-1 flex items-center gap-1.5 text-muted"}>
+            <MapPin className="size-4" aria-hidden />
+            {city}
+          </p>
+        ) : null}
+      </div>
+      <StatusBadge status={business.status} />
+    </>
+  );
 
   return (
     <div className="space-y-10">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-sm text-muted">{tl(business.type as ListingType)}</p>
-          <h1 className="text-3xl font-bold text-ink">{name}</h1>
-          {city ? (
-            <p className="mt-1 flex items-center gap-1.5 text-muted">
-              <MapPin className="size-4" aria-hidden />
-              {city}
-            </p>
-          ) : null}
-        </div>
-        <StatusBadge status={business.status} />
-      </header>
+      {pictured ? (
+        <PhotoBackdrop
+          as="header"
+          backdrop={{ city: pictured, photo: pictured.photo }}
+          overlay="left"
+          priority
+          creditAt="top"
+          sizes="(min-width: 1024px) 976px, 100vw"
+          className="rounded-2xl"
+        >
+          <div className="flex min-h-48 flex-wrap items-end justify-between gap-4 p-6 pt-12 sm:p-8 sm:pt-16">
+            {heading(true)}
+          </div>
+        </PhotoBackdrop>
+      ) : (
+        <header className="flex flex-wrap items-start justify-between gap-4">{heading(false)}</header>
+      )}
 
       {sp.submitted === "1" && business.status === "pending_review" ? (
         <Notice tone="success">{t("submittedBanner")}</Notice>

@@ -33,7 +33,13 @@ export type PublicListingCard = Awaited<ReturnType<typeof listPublicListings>>["
 
 export async function listPublicListings(
   ctx: DalContext,
-  opts: { type?: "venue" | "caterer" | "performer"; cityId?: string; countryIso2?: string; page?: number; pageSize?: number } = {},
+  opts: {
+    type?: "venue" | "caterer" | "performer";
+    cityId?: string;
+    countryIso2?: string;
+    page?: number;
+    pageSize?: number;
+  } = {},
 ) {
   const pageSize = Math.min(opts.pageSize ?? 24, 48);
   const page = Math.max(opts.page ?? 1, 1);
@@ -101,7 +107,13 @@ export async function listPublishedReviews(ctx: DalContext, listingId: string, l
 
 export async function listVisibleCountries(ctx: DalContext) {
   return ctx.db
-    .select({ iso2: countries.iso2, nameTr: countries.nameTr, nameEn: countries.nameEn, slugTr: countries.slugTr, slugEn: countries.slugEn })
+    .select({
+      iso2: countries.iso2,
+      nameTr: countries.nameTr,
+      nameEn: countries.nameEn,
+      slugTr: countries.slugTr,
+      slugEn: countries.slugEn,
+    })
     .from(countries)
     .where(eq(countries.isVisible, true))
     .orderBy(asc(countries.nameEn));
@@ -136,7 +148,14 @@ export async function listFeaturedCities(ctx: DalContext, countryIso2?: string, 
 
 export async function listActiveEventTypes(ctx: DalContext) {
   return ctx.db
-    .select({ key: eventTypes.key, labelTr: eventTypes.labelTr, labelEn: eventTypes.labelEn, slugTr: eventTypes.slugTr, slugEn: eventTypes.slugEn, isTurkishCultural: eventTypes.isTurkishCultural })
+    .select({
+      key: eventTypes.key,
+      labelTr: eventTypes.labelTr,
+      labelEn: eventTypes.labelEn,
+      slugTr: eventTypes.slugTr,
+      slugEn: eventTypes.slugEn,
+      isTurkishCultural: eventTypes.isTurkishCultural,
+    })
     .from(eventTypes)
     .where(eq(eventTypes.isActive, true))
     .orderBy(asc(eventTypes.sortOrder));
@@ -144,12 +163,16 @@ export async function listActiveEventTypes(ctx: DalContext) {
 
 /** Trust bar counts (cached at page level). */
 export async function platformCounts(ctx: DalContext) {
-  const [row] = await ctx.db.execute<{ listings: number; countries: number; cities: number; reviews: number }>(sql`
+  const [row] = await ctx.db
+    .execute<{ listings: number; countries: number; cities: number; reviews: number }>(
+      sql`
     select
       (select count(*)::int from listings where is_public and deleted_at is null) as listings,
       (select count(*)::int from countries where is_visible) as countries,
       (select count(*)::int from cities where listing_count > 0) as cities,
       (select count(*)::int from reviews where status = 'published') as reviews
-  `).then((r) => r.rows);
+  `,
+    )
+    .then((r) => r.rows);
   return row;
 }

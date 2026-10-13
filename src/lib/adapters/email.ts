@@ -19,7 +19,10 @@ export interface EmailProvider {
 
 class ResendProvider implements EmailProvider {
   readonly name = "resend";
-  constructor(private client: Resend, private from: string) {}
+  constructor(
+    private client: Resend,
+    private from: string,
+  ) {}
   async send(m: EmailMessage) {
     const { data, error } = await this.client.emails.send({
       from: this.from,
@@ -49,7 +52,9 @@ let provider: EmailProvider | undefined;
 export function emailProvider(): EmailProvider {
   if (!provider) {
     const e = env();
-    provider = e.RESEND_API_KEY ? new ResendProvider(new Resend(e.RESEND_API_KEY), e.EMAIL_FROM) : new ConsoleProvider();
+    provider = e.RESEND_API_KEY
+      ? new ResendProvider(new Resend(e.RESEND_API_KEY), e.EMAIL_FROM)
+      : new ConsoleProvider();
   }
   return provider;
 }

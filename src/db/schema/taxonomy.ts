@@ -30,9 +30,7 @@ export const eventTypes = pgTable(
   ],
 );
 
-export const venueTypes = pgTable("venue_types", lookupColumns(), (t) => [
-  uniqueIndex("venue_types_key_uq").on(t.key),
-]);
+export const venueTypes = pgTable("venue_types", lookupColumns(), (t) => [uniqueIndex("venue_types_key_uq").on(t.key)]);
 export const actTypes = pgTable("act_types", lookupColumns(), (t) => [uniqueIndex("act_types_key_uq").on(t.key)]);
 export const cuisines = pgTable("cuisines", lookupColumns(), (t) => [uniqueIndex("cuisines_key_uq").on(t.key)]);
 export const serviceStyles = pgTable("service_styles", lookupColumns(), (t) => [
@@ -63,5 +61,8 @@ export const cancellationPolicies = pgTable(
     businessId: uuid("business_id"),
     ...timestamps,
   },
-  (t) => [index("cancellation_policies_key_idx").on(t.key), index("cancellation_policies_business_idx").on(t.businessId)],
+  (t) => [
+    index("cancellation_policies_key_idx").on(t.key),
+    index("cancellation_policies_business_idx").on(t.businessId),
+  ],
 );

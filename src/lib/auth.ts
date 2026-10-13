@@ -4,7 +4,15 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { magicLink, organization } from "better-auth/plugins";
 import { getDb } from "@/db";
-import { account, invitation, member, organization as organizationTable, session, user, verification } from "@/db/schema";
+import {
+  account,
+  invitation,
+  member,
+  organization as organizationTable,
+  session,
+  user,
+  verification,
+} from "@/db/schema";
 import { sendActionEmail } from "@/emails/send";
 import { env } from "@/lib/env";
 

@@ -34,15 +34,30 @@ export default async function HomePage() {
             </label>
             <label className="flex flex-col rounded-xl px-3 py-2 hover:bg-section">
               <span className="text-xs font-semibold text-muted">{t("eventType")}</span>
-              <input name="event" className="bg-transparent text-ink outline-none" placeholder={t("eventTypePlaceholder")} />
+              <input
+                name="event"
+                className="bg-transparent text-ink outline-none"
+                placeholder={t("eventTypePlaceholder")}
+              />
             </label>
             <label className="flex flex-col rounded-xl px-3 py-2 hover:bg-section">
               <span className="text-xs font-semibold text-muted">{t("guests")}</span>
-              <input name="guests" type="number" min={1} inputMode="numeric" className="bg-transparent text-ink outline-none" placeholder={t("guestsPlaceholder")} />
+              <input
+                name="guests"
+                type="number"
+                min={1}
+                inputMode="numeric"
+                className="bg-transparent text-ink outline-none"
+                placeholder={t("guestsPlaceholder")}
+              />
             </label>
             <label className="flex flex-col rounded-xl px-3 py-2 hover:bg-section">
               <span className="text-xs font-semibold text-muted">{t("location")}</span>
-              <input name="place" className="bg-transparent text-ink outline-none" placeholder={t("locationPlaceholder")} />
+              <input
+                name="place"
+                className="bg-transparent text-ink outline-none"
+                placeholder={t("locationPlaceholder")}
+              />
             </label>
             <button type="submit" className={buttonVariants({ variant: "cta", size: "lg" })}>
               <Search className="size-5" aria-hidden />

@@ -33,18 +33,28 @@ describe("subscription visibility rule", () => {
     expect(isSubscriptionInGoodStanding(sub({ status: "comped" }), now)).toBe(true);
   });
   it("past_due is public only inside the 7-day grace period", () => {
-    expect(isSubscriptionInGoodStanding(sub({ status: "past_due", graceUntil: new Date(now.getTime() + day) }), now)).toBe(true);
-    expect(isSubscriptionInGoodStanding(sub({ status: "past_due", graceUntil: new Date(now.getTime() - day) }), now)).toBe(false);
+    expect(
+      isSubscriptionInGoodStanding(sub({ status: "past_due", graceUntil: new Date(now.getTime() + day) }), now),
+    ).toBe(true);
+    expect(
+      isSubscriptionInGoodStanding(sub({ status: "past_due", graceUntil: new Date(now.getTime() - day) }), now),
+    ).toBe(false);
   });
   it("cancelled stays public until the period ends; expired never", () => {
-    expect(isSubscriptionInGoodStanding(sub({ status: "canceled", currentPeriodEnd: new Date(now.getTime() + day) }), now)).toBe(true);
-    expect(isSubscriptionInGoodStanding(sub({ status: "canceled", currentPeriodEnd: new Date(now.getTime() - day) }), now)).toBe(false);
+    expect(
+      isSubscriptionInGoodStanding(sub({ status: "canceled", currentPeriodEnd: new Date(now.getTime() + day) }), now),
+    ).toBe(true);
+    expect(
+      isSubscriptionInGoodStanding(sub({ status: "canceled", currentPeriodEnd: new Date(now.getTime() - day) }), now),
+    ).toBe(false);
     expect(isSubscriptionInGoodStanding(sub({ status: "expired" }), now)).toBe(false);
     expect(isSubscriptionInGoodStanding(null, now)).toBe(false);
   });
   it("daily job settles lapsed states to expired", () => {
     expect(effectiveSubscriptionStatus(sub({ trialEndsAt: new Date(now.getTime() - 1) }), now)).toBe("expired");
-    expect(effectiveSubscriptionStatus(sub({ status: "past_due", graceUntil: new Date(now.getTime() - 1) }), now)).toBe("expired");
+    expect(effectiveSubscriptionStatus(sub({ status: "past_due", graceUntil: new Date(now.getTime() - 1) }), now)).toBe(
+      "expired",
+    );
     expect(effectiveSubscriptionStatus(sub({ status: "active" }), now)).toBe("active");
   });
   it("a listing needs business + listing approved, not deleted, and good standing", () => {
@@ -66,9 +76,15 @@ describe("subscription visibility rule", () => {
 
 describe("lazy booking expiry", () => {
   it("treats an overdue request as expired on read", () => {
-    expect(effectiveBookingStatus({ status: "requested", requestExpiresAt: new Date(now.getTime() - 1) }, now)).toBe("expired");
-    expect(effectiveBookingStatus({ status: "requested", requestExpiresAt: new Date(now.getTime() + 1) }, now)).toBe("requested");
-    expect(effectiveBookingStatus({ status: "confirmed", requestExpiresAt: new Date(now.getTime() - 1) }, now)).toBe("confirmed");
+    expect(effectiveBookingStatus({ status: "requested", requestExpiresAt: new Date(now.getTime() - 1) }, now)).toBe(
+      "expired",
+    );
+    expect(effectiveBookingStatus({ status: "requested", requestExpiresAt: new Date(now.getTime() + 1) }, now)).toBe(
+      "requested",
+    );
+    expect(effectiveBookingStatus({ status: "confirmed", requestExpiresAt: new Date(now.getTime() - 1) }, now)).toBe(
+      "confirmed",
+    );
   });
 });
 

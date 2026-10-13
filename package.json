@@ -17,6 +17,7 @@
     "db:studio": "drizzle-kit studio",
     "db:reset-local": "tsx scripts/reset-local.ts",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "r2:cors": "tsx scripts/r2-cors.ts"
   },
   "dependencies": {

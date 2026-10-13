@@ -10,7 +10,15 @@ import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { DB } from "@/db";
 import * as s from "@/db/schema";
-import { adminDal, bookingsDal, businessesDal, enquiriesDal, publicData, type DalContext, type SessionUser } from "@/server/dal";
+import {
+  adminDal,
+  bookingsDal,
+  businessesDal,
+  enquiriesDal,
+  publicData,
+  type DalContext,
+  type SessionUser,
+} from "@/server/dal";
 import { refreshBusinessVisibility } from "@/server/internal/visibility";
 import { runDailyJob } from "@/server/internal/daily-job";
 import { freshTestDb, TEST_DATABASE_URL } from "../support/db";
@@ -25,11 +33,19 @@ describe.skipIf(!TEST_DATABASE_URL)("DAL authorisation", () => {
   const ctx = (who: keyof typeof u | null, now?: Date): DalContext => ({ db, user: who ? u[who] : null, now });
 
   async function makeUser(key: string, role: SessionUser["role"]) {
-    const [row] = await db.insert(s.user).values({ email: `${key}@test.local`, name: key, role, emailVerified: true }).returning();
+    const [row] = await db
+      .insert(s.user)
+      .values({ email: `${key}@test.local`, name: key, role, emailVerified: true })
+      .returning();
     u[key] = { id: row.id, email: row.email, name: row.name, role, preferredLocale: "en" };
   }
 
-  async function makeBusiness(key: string, ownerKey: string, subStatus: "active" | "expired" | null, status: "approved" | "pending_review" = "approved") {
+  async function makeBusiness(
+    key: string,
+    ownerKey: string,
+    subStatus: "active" | "expired" | null,
+    status: "approved" | "pending_review" = "approved",
+  ) {
     const [org] = await db.insert(s.organization).values({ name: key, slug: key }).returning();
     await db.insert(s.member).values({ organizationId: org.id, userId: u[ownerKey].id, role: "owner" });
     const [biz] = await db
@@ -53,7 +69,15 @@ describe.skipIf(!TEST_DATABASE_URL)("DAL authorisation", () => {
     ids[`${key}Org`] = org.id;
     const [listing] = await db
       .insert(s.listings)
-      .values({ businessId: biz.id, type: "venue", titleEn: `${key} hall`, slug: `${key}-hall`, status: status === "approved" ? "approved" : "pending_review", currency: "GBP", priceFrom: 1000 })
+      .values({
+        businessId: biz.id,
+        type: "venue",
+        titleEn: `${key} hall`,
+        slug: `${key}-hall`,
+        status: status === "approved" ? "approved" : "pending_review",
+        currency: "GBP",
+        priceFrom: 1000,
+      })
       .returning();
     ids[`${key}Listing`] = listing.id;
     if (subStatus) {
@@ -70,10 +94,26 @@ describe.skipIf(!TEST_DATABASE_URL)("DAL authorisation", () => {
 
   beforeAll(async () => {
     ({ db, close } = await freshTestDb());
-    await db.insert(s.countries).values({ iso2: "GB", nameEn: "United Kingdom", nameTr: "İngiltere", slugEn: "united-kingdom", slugTr: "ingiltere", defaultCurrency: "GBP", distanceUnit: "mi" });
+    await db.insert(s.countries).values({
+      iso2: "GB",
+      nameEn: "United Kingdom",
+      nameTr: "İngiltere",
+      slugEn: "united-kingdom",
+      slugTr: "ingiltere",
+      defaultCurrency: "GBP",
+      distanceUnit: "mi",
+    });
     const [london] = await db
       .insert(s.cities)
-      .values({ countryIso2: "GB", nameEn: "London", nameTr: "Londra", slugEn: "london", slugTr: "londra", timezone: "Europe/London", centre: { lng: -0.1276, lat: 51.5072 } })
+      .values({
+        countryIso2: "GB",
+        nameEn: "London",
+        nameTr: "Londra",
+        slugEn: "london",
+        slugTr: "londra",
+        timezone: "Europe/London",
+        centre: { lng: -0.1276, lat: 51.5072 },
+      })
       .returning();
     ids.london = london.id;
 
@@ -92,14 +132,29 @@ describe.skipIf(!TEST_DATABASE_URL)("DAL authorisation", () => {
     await makeBusiness("bizP", "ownerP", null, "pending_review"); // awaiting approval
     await db.insert(s.member).values({ organizationId: ids.bizAOrg, userId: u.managerA.id, role: "member" });
 
-    const aliceEnq = await enquiriesDal.createEnquiry(ctx("alice"), { listingId: ids.bizAListing, message: "Is 12 June free for 200 guests?" });
-    const bobEnq = await enquiriesDal.createEnquiry(ctx("bob"), { listingId: ids.bizBListing, message: "Do you allow davul-zurna at weddings?" });
+    const aliceEnq = await enquiriesDal.createEnquiry(ctx("alice"), {
+      listingId: ids.bizAListing,
+      message: "Is 12 June free for 200 guests?",
+    });
+    const bobEnq = await enquiriesDal.createEnquiry(ctx("bob"), {
+      listingId: ids.bizBListing,
+      message: "Do you allow davul-zurna at weddings?",
+    });
     ids.aliceEnquiry = aliceEnq.id;
     ids.bobEnquiry = bobEnq.id;
 
     const [aliceBooking] = await db
       .insert(s.bookings)
-      .values({ enquiryId: aliceEnq.id, listingId: ids.bizAListing, businessId: ids.bizA, customerId: u.alice.id, eventDate: "2027-06-12", timezone: "Europe/London", currency: "GBP", status: "confirmed" })
+      .values({
+        enquiryId: aliceEnq.id,
+        listingId: ids.bizAListing,
+        businessId: ids.bizA,
+        customerId: u.alice.id,
+        eventDate: "2027-06-12",
+        timezone: "Europe/London",
+        currency: "GBP",
+        status: "confirmed",
+      })
       .returning();
     const [bobBooking] = await db
       .insert(s.bookings)
@@ -126,7 +181,9 @@ describe.skipIf(!TEST_DATABASE_URL)("DAL authorisation", () => {
   describe("customers", () => {
     it("anonymous callers are rejected", async () => {
       await expect(enquiriesDal.listMyEnquiries(ctx(null))).rejects.toMatchObject({ code: "UNAUTHENTICATED" });
-      await expect(bookingsDal.getBooking(ctx(null), ids.aliceBooking)).rejects.toMatchObject({ code: "UNAUTHENTICATED" });
+      await expect(bookingsDal.getBooking(ctx(null), ids.aliceBooking)).rejects.toMatchObject({
+        code: "UNAUTHENTICATED",
+      });
     });
 
     it("a customer sees only their own enquiries", async () => {
@@ -146,44 +203,66 @@ describe.skipIf(!TEST_DATABASE_URL)("DAL authorisation", () => {
     });
 
     it("a customer cannot enquire to a hidden or pending listing", async () => {
-      await expect(enquiriesDal.createEnquiry(ctx("alice"), { listingId: ids.bizCListing, message: "Hello, is this available?" })).rejects.toMatchObject({ code: "NOT_FOUND" });
-      await expect(enquiriesDal.createEnquiry(ctx("alice"), { listingId: ids.bizPListing, message: "Hello, is this available?" })).rejects.toMatchObject({ code: "NOT_FOUND" });
+      await expect(
+        enquiriesDal.createEnquiry(ctx("alice"), { listingId: ids.bizCListing, message: "Hello, is this available?" }),
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+      await expect(
+        enquiriesDal.createEnquiry(ctx("alice"), { listingId: ids.bizPListing, message: "Hello, is this available?" }),
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
     });
 
     it("a customer cannot open a business inbox", async () => {
-      await expect(enquiriesDal.listBusinessEnquiries(ctx("alice"), ids.bizA)).rejects.toMatchObject({ code: "FORBIDDEN" });
+      await expect(enquiriesDal.listBusinessEnquiries(ctx("alice"), ids.bizA)).rejects.toMatchObject({
+        code: "FORBIDDEN",
+      });
     });
   });
 
   describe("businesses", () => {
     it("a business sees its own enquiries and bookings", async () => {
-      expect((await enquiriesDal.listBusinessEnquiries(ctx("ownerA"), ids.bizA)).map((e) => e.id)).toEqual([ids.aliceEnquiry]);
-      expect((await bookingsDal.listBusinessBookings(ctx("ownerA"), ids.bizA)).map((b) => b.id)).toEqual([ids.aliceBooking]);
+      expect((await enquiriesDal.listBusinessEnquiries(ctx("ownerA"), ids.bizA)).map((e) => e.id)).toEqual([
+        ids.aliceEnquiry,
+      ]);
+      expect((await bookingsDal.listBusinessBookings(ctx("ownerA"), ids.bizA)).map((b) => b.id)).toEqual([
+        ids.aliceBooking,
+      ]);
       expect((await enquiriesDal.getEnquiry(ctx("ownerA"), ids.aliceEnquiry)).side).toBe("business");
     });
 
     it("a business cannot read another business's enquiries or bookings", async () => {
-      await expect(enquiriesDal.listBusinessEnquiries(ctx("ownerA"), ids.bizB)).rejects.toMatchObject({ code: "FORBIDDEN" });
-      await expect(bookingsDal.listBusinessBookings(ctx("ownerA"), ids.bizB)).rejects.toMatchObject({ code: "FORBIDDEN" });
+      await expect(enquiriesDal.listBusinessEnquiries(ctx("ownerA"), ids.bizB)).rejects.toMatchObject({
+        code: "FORBIDDEN",
+      });
+      await expect(bookingsDal.listBusinessBookings(ctx("ownerA"), ids.bizB)).rejects.toMatchObject({
+        code: "FORBIDDEN",
+      });
       await expect(bookingsDal.getBooking(ctx("ownerA"), ids.bobBooking)).rejects.toMatchObject({ code: "FORBIDDEN" });
       await expect(enquiriesDal.getEnquiry(ctx("ownerA"), ids.bobEnquiry)).rejects.toMatchObject({ code: "FORBIDDEN" });
     });
 
     it("a business cannot read another business's subscription", async () => {
-      await expect(businessesDal.getBusinessSubscription(ctx("ownerA"), ids.bizB)).rejects.toMatchObject({ code: "FORBIDDEN" });
+      await expect(businessesDal.getBusinessSubscription(ctx("ownerA"), ids.bizB)).rejects.toMatchObject({
+        code: "FORBIDDEN",
+      });
       const own = await businessesDal.getBusinessSubscription(ctx("ownerA"), ids.bizA);
       expect(own?.status).toBe("active");
       expect(own?.inGoodStanding).toBe(true);
     });
 
     it("probing a non-existent business id looks the same as someone else's", async () => {
-      await expect(enquiriesDal.listBusinessEnquiries(ctx("ownerA"), "00000000-0000-4000-8000-000000000000")).rejects.toMatchObject({ code: "FORBIDDEN" });
+      await expect(
+        enquiriesDal.listBusinessEnquiries(ctx("ownerA"), "00000000-0000-4000-8000-000000000000"),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
     });
 
     it("a team manager gets the inbox but not billing", async () => {
       expect((await enquiriesDal.listBusinessEnquiries(ctx("managerA"), ids.bizA)).length).toBe(1);
-      await expect(businessesDal.getBusinessSubscription(ctx("managerA"), ids.bizA)).rejects.toMatchObject({ code: "FORBIDDEN" });
-      await expect(enquiriesDal.listBusinessEnquiries(ctx("managerA"), ids.bizB)).rejects.toMatchObject({ code: "FORBIDDEN" });
+      await expect(businessesDal.getBusinessSubscription(ctx("managerA"), ids.bizA)).rejects.toMatchObject({
+        code: "FORBIDDEN",
+      });
+      await expect(enquiriesDal.listBusinessEnquiries(ctx("managerA"), ids.bizB)).rejects.toMatchObject({
+        code: "FORBIDDEN",
+      });
       expect((await businessesDal.listMyBusinesses(ctx("managerA"))).map((b) => b.id)).toEqual([ids.bizA]);
     });
 
@@ -249,7 +328,12 @@ describe.skipIf(!TEST_DATABASE_URL)("DAL authorisation", () => {
       // A trial that ended yesterday but still says "trialing".
       await makeUser("ownerT", "business");
       await makeBusiness("bizT", "ownerT", null);
-      await db.insert(s.subscriptions).values({ businessId: ids.bizT, status: "trialing", trialStartedAt: new Date(Date.now() - 91 * DAY), trialEndsAt: new Date(Date.now() - DAY) });
+      await db.insert(s.subscriptions).values({
+        businessId: ids.bizT,
+        status: "trialing",
+        trialStartedAt: new Date(Date.now() - 91 * DAY),
+        trialEndsAt: new Date(Date.now() - DAY),
+      });
       // Lazy read already treats it as not public:
       await refreshBusinessVisibility(db, ids.bizT);
       expect(await publicData.getPublicListingBySlug(ctx(null), "bizT-hall")).toBeNull();

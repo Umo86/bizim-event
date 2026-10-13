@@ -65,7 +65,10 @@ export const reports = pgTable(
     resolutionNote: text("resolution_note"),
     ...timestamps,
   },
-  (t) => [index("reports_status_idx").on(t.status, t.createdAt), index("reports_target_idx").on(t.targetType, t.targetId)],
+  (t) => [
+    index("reports_status_idx").on(t.status, t.createdAt),
+    index("reports_target_idx").on(t.targetType, t.targetId),
+  ],
 );
 
 export type FaqItem = { q: string; a: string };

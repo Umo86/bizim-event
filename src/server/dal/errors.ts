@@ -10,7 +10,10 @@ const STATUS: Record<DalErrorCode, number> = {
 
 export class DalError extends Error {
   readonly status: number;
-  constructor(readonly code: DalErrorCode, message?: string) {
+  constructor(
+    readonly code: DalErrorCode,
+    message?: string,
+  ) {
     super(message ?? code);
     this.name = "DalError";
     this.status = STATUS[code];

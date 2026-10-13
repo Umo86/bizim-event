@@ -38,6 +38,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Lint
         run: pnpm lint
+      - name: Formatting
+        run: pnpm format:check
       - name: Typecheck
         run: pnpm typecheck
       - name: Migrations are in sync with the schema

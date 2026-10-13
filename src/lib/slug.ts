@@ -4,15 +4,25 @@
  * because "ı" and "İ" do not decompose to a plain i under NFD.
  */
 const TURKISH_MAP: Record<string, string> = {
-  ç: "c", Ç: "c",
-  ğ: "g", Ğ: "g",
-  ı: "i", I: "i", İ: "i",
-  ö: "o", Ö: "o",
-  ş: "s", Ş: "s",
-  ü: "u", Ü: "u",
-  â: "a", Â: "a",
-  î: "i", Î: "i",
-  û: "u", Û: "u",
+  ç: "c",
+  Ç: "c",
+  ğ: "g",
+  Ğ: "g",
+  ı: "i",
+  I: "i",
+  İ: "i",
+  ö: "o",
+  Ö: "o",
+  ş: "s",
+  Ş: "s",
+  ü: "u",
+  Ü: "u",
+  â: "a",
+  Â: "a",
+  î: "i",
+  Î: "i",
+  û: "u",
+  Û: "u",
 };
 
 export function slugify(input: string, maxLength = 80): string {

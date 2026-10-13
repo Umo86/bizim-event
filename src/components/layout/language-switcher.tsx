@@ -21,7 +21,11 @@ export function LanguageSwitcher({ label }: { label: string }) {
   };
 
   return (
-    <div role="group" aria-label={label} className={cn("flex rounded-lg border border-line p-0.5 text-sm", pending && "opacity-60")}>
+    <div
+      role="group"
+      aria-label={label}
+      className={cn("flex rounded-lg border border-line p-0.5 text-sm", pending && "opacity-60")}
+    >
       {(["tr", "en"] as const).map((l) => (
         <button
           key={l}

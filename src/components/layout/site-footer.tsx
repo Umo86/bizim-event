@@ -53,9 +53,7 @@ export async function SiteFooter() {
           </div>
         ))}
       </div>
-      <div className="border-t border-line py-6 text-center text-xs text-muted">
-        © Bizim Event. {t("rights")}
-      </div>
+      <div className="border-t border-line py-6 text-center text-xs text-muted">© Bizim Event. {t("rights")}</div>
     </footer>
   );
 }

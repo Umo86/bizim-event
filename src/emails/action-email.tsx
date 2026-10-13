@@ -18,7 +18,9 @@ export function ActionEmail({ locale, heading, body, buttonLabel, url, footnote 
       <Head />
       <Preview>{heading}</Preview>
       <Body style={{ backgroundColor: brand.grey, fontFamily: "Inter, Arial, sans-serif", color: brand.text }}>
-        <Container style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: 32, margin: "32px auto", maxWidth: 520 }}>
+        <Container
+          style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: 32, margin: "32px auto", maxWidth: 520 }}
+        >
           <Text style={{ color: brand.turquoise, fontWeight: 700, fontSize: 20, margin: 0 }}>Bizim Event</Text>
           <Heading as="h1" style={{ fontSize: 22, margin: "24px 0 12px" }}>
             {heading}
@@ -27,7 +29,13 @@ export function ActionEmail({ locale, heading, body, buttonLabel, url, footnote 
           <Section style={{ margin: "24px 0" }}>
             <Button
               href={url}
-              style={{ backgroundColor: brand.coral, color: "#ffffff", padding: "12px 20px", borderRadius: 10, fontWeight: 600 }}
+              style={{
+                backgroundColor: brand.coral,
+                color: "#ffffff",
+                padding: "12px 20px",
+                borderRadius: 10,
+                fontWeight: 600,
+              }}
             >
               {buttonLabel}
             </Button>

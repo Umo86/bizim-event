@@ -84,8 +84,5 @@ export const areas = pgTable(
     centre: geographyPoint("centre"),
     ...timestamps,
   },
-  (t) => [
-    uniqueIndex("areas_city_slug_en_uq").on(t.cityId, t.slugEn),
-    index("areas_city_idx").on(t.cityId),
-  ],
+  (t) => [uniqueIndex("areas_city_slug_en_uq").on(t.cityId, t.slugEn), index("areas_city_idx").on(t.cityId)],
 );

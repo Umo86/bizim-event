@@ -11,9 +11,18 @@ export const createEnquiryInput = z.object({
   listingId: z.string().uuid(),
   eventPlanId: z.string().uuid().optional(),
   eventTypeId: z.string().uuid().optional(),
-  eventDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  startTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
-  endTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  eventDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  startTime: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .optional(),
+  endTime: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .optional(),
   guests: z.number().int().positive().max(10_000).optional(),
   budget: z.number().nonnegative().max(10_000_000).optional(),
   budgetCurrency: z.string().length(3).toUpperCase().optional(),

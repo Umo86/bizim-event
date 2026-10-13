@@ -16,12 +16,18 @@ export interface SmsProvider {
 class InfobipProvider implements SmsProvider {
   readonly name = "infobip";
   readonly enabled = true;
-  constructor(private baseUrl: string, private apiKey: string, private sender: string) {}
+  constructor(
+    private baseUrl: string,
+    private apiKey: string,
+    private sender: string,
+  ) {}
   async send(toE164: string, text: string) {
     const res = await fetch(`${this.baseUrl.replace(/\/$/, "")}/sms/2/text/advanced`, {
       method: "POST",
       headers: { Authorization: `App ${this.apiKey}`, "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ messages: [{ from: this.sender, destinations: [{ to: toE164.replace(/^\+/, "") }], text }] }),
+      body: JSON.stringify({
+        messages: [{ from: this.sender, destinations: [{ to: toE164.replace(/^\+/, "") }], text }],
+      }),
     });
     if (!res.ok) throw new Error(`Infobip ${res.status}`);
   }
@@ -50,8 +56,6 @@ export function sms(): SmsProvider {
 
 /** True if `now` falls in 22:00–08:00 local time for the given IANA zone. */
 export function isQuietHours(timeZone: string, now = new Date()): boolean {
-  const hour = Number(
-    new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hourCycle: "h23", timeZone }).format(now),
-  );
+  const hour = Number(new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hourCycle: "h23", timeZone }).format(now));
   return hour >= 22 || hour < 8;
 }

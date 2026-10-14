@@ -110,6 +110,30 @@ tests/unit, tests/integration
 - Testimonials on "List your business" come from `src/content/testimonials.ts` and stay hidden until there are real
   quotes — never invent them.
 
+### Billing (Phase 3)
+
+- Plans live in `src/lib/plans.ts` (£6/month, £60/year, GBP, Stripe lookup keys, trial/grace/reminder constants). The
+  Stripe product, prices and Customer Portal configuration are created on first use (`ensurePrices`,
+  `ensurePortalConfiguration`) — never hard-code Stripe ids.
+- Provider (`src/lib/adapters/billing.ts`): `stripe` when `STRIPE_SECRET_KEY` is set; `dev` simulator in development and
+  tests without keys (`/[locale]/dev/checkout`, `/[locale]/dev/billing-portal`, signed short-lived tokens, `notFound()`
+  otherwise); `disabled` in production without keys (trials run, plans can't be bought). `dev_…` customer/subscription
+  ids belong to the simulator only.
+- `subscriptions.status` is ours (trialing | active | past_due | canceled | expired | comped); `stripe_status` is Stripe's
+  raw status (`trialing` there = a paid plan that starts when the free trial ends). The UI reads `billingState()` from
+  `src/server/rules.ts`; Stripe → ours in `mapStripeStatus`; the 7-day grace is set once by `nextGraceUntil`.
+- Every change goes through `applySubscriptionSnapshot()` (`src/server/internal/billing.ts`): row lock, comped stays
+  comped, a second live subscription for the same business is audited and ignored, then `refreshBusinessVisibility()`.
+  Webhooks (`/api/stripe/webhook`): signature checked on the raw body, idempotent via `processed_webhooks` in the same
+  transaction, the subscription re-read from Stripe (events arrive out of order), emails after the response.
+  `/api/billing/return` syncs the finished checkout right away so the owner doesn't wait for the webhook.
+- Emails come from before/after rows (`billingNoticeFor`), so replays never send twice. Checkout during the trial passes
+  `trial_end` (only with >49 h left: Stripe needs 48 h) so nothing is charged before the trial ends.
+- Daily job: settles expired trials and graces (emails), trial reminders 30/7/1 days before the end
+  (`trial_reminders_sent` stores the days-left values), prunes `processed_webhooks` after 30 days.
+- Admin billing (`/[locale]/admin/billing`): setup checklist, MRR and counts (test businesses excluded; yearly = £5/month),
+  filters, extend trial (7/14/30/90 days), free access on/off — all audited.
+
 ### Cities on the homepage (interim, before Phase 4)
 
 - Featured cities, their taglines and photos live in `src/content/cities.ts` (the seed reads the same list). Photos are
@@ -142,7 +166,7 @@ images), `areas` · Taxonomy (bilingual): `event_types`, `venue_types`, `act_typ
 
 ```
 pnpm dev | build | lint | typecheck | test
-pnpm test:e2e        # Playwright: sign up → verify → log in → wizard → approve → second listing (needs db:seed)
+pnpm test:e2e        # Playwright: sign-up → wizard → approval, test logins, billing (re-seeds first; E2E_RESEED=0 skips)
 pnpm db:generate     # SQL migration from schema changes
 pnpm db:migrate      # apply migrations (uses DATABASE_URL_UNPOOLED)
 pnpm db:seed         # reference data + test data (once); --reset recreates it, --remove-demo deletes it,
@@ -160,7 +184,8 @@ they are skipped when it's unset.
 - **Test data = every account on `@bizimevent.test`** (`.test` is reserved, so no real person can own one) and what it
   owns. `--reset` / `--remove-demo` delete exactly that, so they are safe on the live database. Logins say what they
   are: `venue1…22@`, `caterer1…15@`, `performer1…20@` (each owns one business), `admin@`, `customer1…8@`,
-  `newbusiness@` (verified, nothing set up). The seed prints which one is live, pending or hidden.
+  `newbusiness@` (verified, nothing set up). The seed prints which one is live, pending or hidden, plus a paying, an
+  overdue and a free venue. Seeded paid subscriptions use `dev_…` ids, so the billing simulator can manage them.
 - Password `BizimEvent!2026` on a local database only; anywhere else the seed refuses without `SEED_PASSWORD` (12+), so
   the test admin never has a password that's in the repo. Test data must not reach real people: fictional phone ranges
   (Ofcom/BNetzA drama numbers) or none, `.example` emails, no social handles, slugs end in `-test`.
@@ -189,7 +214,9 @@ they are skipped when it's unset.
 - [x] **Phase 2 — Business onboarding & listings:** "List your business" page, 10-step wizard for venues, caterers and
       performers (worldwide address, currency, time zone), Places/Photon address search, browser-resized R2 uploads,
       listing editor, admin approval queue with request-changes/reject, notification emails.
-- [ ] Phase 3 — Subscriptions (Stripe Checkout/Portal, webhooks, trial reminders, grace, admin tools, Pricing page)
+- [x] **Phase 3 — Subscriptions:** Stripe Checkout + Customer Portal (prices and portal created on first use), signed
+      idempotent webhooks, local billing simulator, trial reminders, 7-day grace, owner billing page and overview banner,
+      admin billing (MRR, extend trial, free access), Pricing page.
 - [ ] Phase 4 — Discovery (homepage, PostGIS search + filters, FX hints, MapLibre, detail pages, shortlist, compare)
 - [ ] Phase 5 — Enquiries, chat & bookings (event plans, Pusher chat, viewings, offers, requests, calendars, iCal)
 - [ ] Phase 6 — Trust & comms (reviews, Star Business, response metrics, notifications, reports/disputes)

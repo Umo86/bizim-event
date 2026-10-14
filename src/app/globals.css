@@ -22,7 +22,7 @@
   --be-border: #e4e7eb;
   --be-star: #f5a623;
   --be-danger: #c81e1e;
-  --be-success: #0f8a5f;
+  --be-success: #0b7a52; /* 5.4:1 on white — #0f8a5f was 4.4:1, under AA for small text */
   --be-radius: 1rem;
   --be-shadow: 0 1px 2px rgb(31 41 51 / 0.06), 0 8px 24px rgb(31 41 51 / 0.06);
 }

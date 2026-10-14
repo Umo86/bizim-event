@@ -1,8 +1,9 @@
 name: E2E
 
 # Real browser against `pnpm dev` and a throwaway Postgres: sign up, verify the email, log in,
-# set up a venue, a caterer and a performer, get approved, add a second listing; plus the
-# seeded test accounts. About 10–15 runner minutes, so docs-only pushes skip it.
+# set up a venue, a caterer and a performer, get approved, add a second listing; the seeded
+# test accounts; and billing on the local simulator (no Stripe keys). About 10–15 runner
+# minutes, so docs-only pushes skip it.
 
 on:
   push:
@@ -53,8 +54,9 @@ jobs:
           key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps --only-shell chromium
-      - name: Database with test accounts
-        run: pnpm db:migrate && pnpm db:seed
+      # The test run loads the reference and test data itself (tests/e2e/global-setup.ts).
+      - name: Database
+        run: pnpm db:migrate
       - name: End-to-end tests
         run: pnpm test:e2e
       - uses: actions/upload-artifact@v4

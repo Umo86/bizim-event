@@ -13,7 +13,8 @@ free tiers. See [CLAUDE.md](./CLAUDE.md) for the architecture, rules and phase c
 | 0     | Scaffold, i18n, auth, adapters, CI, cron                       | ✅    |
 | 1     | Full schema, migrations, DAL + guards + tests, seed data       | ✅    |
 | 2     | Business onboarding wizard, listing editor, uploads, approvals | ✅    |
-| 3–8   | Billing, discovery, bookings, trust, SEO, hardening            | ⏳    |
+| 3     | Subscriptions: Stripe, trial reminders, grace, admin billing   | ✅    |
+| 4–8   | Discovery, bookings, trust, SEO, hardening                     | ⏳    |
 
 ## Run it locally
 
@@ -29,8 +30,8 @@ pnpm dev                          # http://localhost:3000 → redirects to /tr o
 
 Without provider keys the app still runs: emails are printed to the console and kept in `.dev-emails/outbox.jsonl`
 (open the verification link from there), chat and SMS use stubs, address search uses OpenStreetMap (Photon) instead of
-Google Places, and photo uploads are stored in `.dev-uploads/` instead of R2 (development only — production uploads
-need R2).
+Google Places, photo uploads are stored in `.dev-uploads/` instead of R2 (development only — production uploads need
+R2), and billing runs on a built-in simulator instead of Stripe (see [Billing](#billing-stripe)).
 
 ## Test accounts
 
@@ -39,18 +40,19 @@ Birmingham, Manchester, Istanbul, Izmir, Berlin and Amsterdam, in every review a
 enquiries, bookings and reviews. Every test account is on `@bizimevent.test`; the password is `BizimEvent!2026` on a
 local database and `SEED_PASSWORD` anywhere else.
 
-| Login                                         | What you'll find                                                        |
-| --------------------------------------------- | ----------------------------------------------------------------------- |
-| `admin@bizimevent.test`                       | the approval queue at `/tr/admin/approvals`                             |
-| `venue1@` … `venue22@bizimevent.test`         | one venue business each (live, on trial, subscribed, pending or hidden) |
-| `caterer1@` … `caterer15@bizimevent.test`     | one catering business each                                              |
-| `performer1@` … `performer20@bizimevent.test` | one act each                                                            |
-| `newbusiness@bizimevent.test`                 | a verified account with nothing set up — try "List your business"       |
-| `customer1@` … `customer8@bizimevent.test`    | customers                                                               |
+| Login                                         | What you'll find                                                             |
+| --------------------------------------------- | ---------------------------------------------------------------------------- |
+| `admin@bizimevent.test`                       | the approval queue (`/tr/admin/approvals`) and billing (`/tr/admin/billing`) |
+| `venue1@` … `venue22@bizimevent.test`         | one venue business each (live, on trial, subscribed, pending or hidden)      |
+| `caterer1@` … `caterer15@bizimevent.test`     | one catering business each                                                   |
+| `performer1@` … `performer20@bizimevent.test` | one act each                                                                 |
+| `newbusiness@bizimevent.test`                 | a verified account with nothing set up — try "List your business"            |
+| `customer1@` … `customer8@bizimevent.test`    | customers                                                                    |
 
-The seed prints which login is live, waiting for approval or hidden. `pnpm db:seed --reset` recreates the test data and
-`pnpm db:seed --remove-demo` deletes it; both touch only `@bizimevent.test` accounts and what they own. Remove it before
-launch: once search is live (Phase 4), approved test listings would be public.
+The seed prints which login is live, waiting for approval or hidden, and for billing a venue that pays, one whose payment
+is overdue and one with free access. `pnpm db:seed --reset` recreates the test data and `pnpm db:seed --remove-demo`
+deletes it; both touch only `@bizimevent.test` accounts and what they own. Remove it before launch: once search is live
+(Phase 4), approved test listings would be public.
 
 ## Tests
 
@@ -62,7 +64,9 @@ pnpm test:e2e    # Playwright, against `pnpm dev` and your local database (run p
 The end-to-end tests sign up a venue (Turkish), a caterer (English) and a performer (Turkish, phone-sized screen), check
 that they can't log in before verifying their email, verify from the email, log out and back in, complete the set-up
 wizard with photo uploads, have the admin approve them, then add, submit and approve a second listing. They also log
-in with the seeded test accounts. GitHub runs them on every push (the E2E workflow).
+in with the seeded test accounts and go through billing on the simulator: choosing a plan during the trial, cancelling
+and resuming, an expired business paying again, a failed payment and its grace period, and the admin billing tools.
+Each run recreates the test data first (`E2E_RESEED=0` skips that). GitHub runs them on every push (the E2E workflow).
 
 ## Deploy (Vercel + Neon)
 
@@ -85,9 +89,40 @@ in with the seeded test accounts. GitHub runs them on every push (the E2E workfl
    only) or `SEED_PASSWORD=… DATABASE_URL_UNPOOLED=… pnpm db:seed` (with test data). Run the migrations again whenever
    a new one is added.
 7. Deploy. The daily cron (`/api/cron/daily`) is registered from `vercel.json`.
+8. Billing: see [Billing (Stripe)](#billing-stripe). Until Stripe is set up, approved businesses get their free trial as
+   usual and the billing page says plans can't be bought yet.
 
 > Vercel Hobby is for non-commercial use. Build and test on Hobby, then move to Pro before Bizim Event takes its first
 > paid subscription.
+
+## Billing (Stripe)
+
+Businesses get 90 days free from the day an admin approves them, then pay £6 a month or £60 a year per business page
+through Stripe Checkout. Stripe's customer portal handles cards, invoices, switching plan and cancelling. Choosing a plan
+during the trial charges nothing until the trial ends. After a failed payment the listings stay live for 7 days while
+Stripe retries the card; after that, or when a cancelled plan runs out, they're hidden (never deleted) until the
+business pays again. Owners are emailed 30 days, 7 days and 1 day before their trial ends. Admins see the numbers,
+extend trials and give free access at `/tr/admin/billing`.
+
+To switch it on (test mode first):
+
+1. Stripe → Developers → API keys: add the secret key (`sk_test_…`) to Vercel as `STRIPE_SECRET_KEY`.
+2. Stripe → Developers → Webhooks → Add endpoint `https://<your domain>/api/stripe/webhook` with these events:
+   `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`,
+   `customer.subscription.deleted`, `customer.subscription.paused`, `customer.subscription.resumed`, `invoice.paid`,
+   `invoice.payment_failed`. Add its signing secret (`whsec_…`) to Vercel as `STRIPE_WEBHOOK_SECRET`, then redeploy.
+3. Log in as an admin → Billing → **Check Stripe connection**. The first check creates the product, the two GBP prices
+   (lookup keys `bizim_event_monthly_gbp` and `bizim_event_yearly_gbp`) and the customer-portal settings, so there is
+   nothing to create by hand. The page also lists what's missing.
+4. Try it with the card `4242 4242 4242 4242`, any future expiry date and any CVC. To receive webhooks on your own
+   machine, run the Stripe CLI: `stripe listen --forward-to localhost:3000/api/stripe/webhook` and use the `whsec_…` it
+   prints.
+5. Going live: move Vercel to Pro, activate the Stripe account, swap in the live secret key and add the same webhook
+   endpoint in live mode (it has its own signing secret). The next check creates the live prices and portal settings.
+
+`STRIPE_TAX_ENABLED=true` turns on Stripe Tax at checkout (prices include any tax); leave it off until you have registered
+for tax in Stripe. Without a Stripe key, development uses a built-in simulator — a pretend checkout, and a pretend
+portal with buttons to switch plan, cancel, resume or fail a payment — and production just runs the free trials.
 
 ## Scripts
 

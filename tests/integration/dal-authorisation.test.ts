@@ -338,8 +338,13 @@ describe.skipIf(!TEST_DATABASE_URL)("DAL authorisation", () => {
       await refreshBusinessVisibility(db, ids.bizT);
       expect(await publicData.getPublicListingBySlug(ctx(null), "bizT-hall")).toBeNull();
 
-      const results = await runDailyJob(db);
-      expect(results.settle_subscription_states).toMatchObject({ ok: true });
+      const sent: string[] = [];
+      const results = await runDailyJob(db, undefined, {
+        send: async (kind, to) => void sent.push(`${kind} → ${to}`),
+        emailGapMs: 0,
+      });
+      expect(results.settle_subscription_states).toMatchObject({ ok: true, emailed: 1 });
+      expect(sent).toContain("trialEnded → ownerT@test.local");
       const [sub] = await db.select().from(s.subscriptions).where(eq(s.subscriptions.businessId, ids.bizT));
       expect(sub.status).toBe("expired");
       const [booking] = await db.select().from(s.bookings).where(eq(s.bookings.id, ids.bobBooking));

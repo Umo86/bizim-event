@@ -36,6 +36,13 @@
       "when": 1791889761214,
       "tag": "0004_alcohol_unknown",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791967304124,
+      "tag": "0005_stripe_status",
+      "breakpoints": true
     }
   ]
 }

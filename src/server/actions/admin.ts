@@ -12,7 +12,7 @@ export async function approveBusinessAction(businessId: string) {
     revalidateTag("listings", "max");
     await sendNotice("businessApproved", res.owner.email, res.owner.preferredLocale, {
       business: res.businessName,
-      trialEndsAt: res.trialEndsAt,
+      date: res.trialEndsAt,
       path: `/business/${businessId}`,
     });
     return null;

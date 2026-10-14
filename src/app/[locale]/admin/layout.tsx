@@ -26,6 +26,9 @@ async function AdminGate({ children }: { children: React.ReactNode }) {
         <Link href="/admin/approvals" className="font-semibold text-primary-strong hover:underline">
           {t("approvals")}
         </Link>
+        <Link href="/admin/billing" className="font-semibold text-primary-strong hover:underline">
+          {t("billing")}
+        </Link>
       </nav>
       {children}
     </div>

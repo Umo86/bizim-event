@@ -3,7 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 /**
  * End-to-end tests: real browser, real dev server, real local database.
  *
- *   pnpm db:migrate && pnpm db:seed   # the tests log in as the seeded admin and test businesses
+ *   pnpm db:migrate                   # the run re-seeds the test data itself (E2E_RESEED=0 to skip)
  *   pnpm test:e2e                     # starts `pnpm dev` unless one is already running on :3000
  *
  * The flows share one dev server and one database, so they run one at a time.
@@ -16,6 +16,7 @@ const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
 
 export default defineConfig({
   testDir: "tests/e2e",
+  globalSetup: "./tests/e2e/global-setup.ts",
   workers: 1,
   fullyParallel: false,
   forbidOnly: !!process.env.CI,

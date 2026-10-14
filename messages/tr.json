@@ -158,6 +158,60 @@
         "heading": "\"{listing}\" ilanını onaylayamadık",
         "body": "Bu ilan aşağıdaki nedenle yayına giremiyor. Diğer ilanlarınız etkilenmez.",
         "button": "Panelinizi açın"
+      },
+      "trialEnding": {
+        "subject": "Ücretsiz deneme sürenizin bitmesine {days} gün kaldı",
+        "heading": "Ücretsiz deneme süreniz {date} tarihinde bitiyor",
+        "body": "{business} deneme süresinden sonra da yayında kalsın diye bir plan seçin: aylık {monthly} ya da yıllık {yearly}. Deneme süresi bitene kadar hiçbir ödeme yapmazsınız.",
+        "button": "Plan seçin"
+      },
+      "trialEnded": {
+        "subject": "Ücretsiz deneme süreniz bitti: {business} şu an görünmüyor",
+        "heading": "Ücretsiz deneme süreniz bitti",
+        "body": "{business} şu anda müşterilere görünmüyor. Hiçbir şey silinmedi: bir plan seçtiğinizde ilanlarınız hemen yeniden yayına girer.",
+        "button": "Plan seçin"
+      },
+      "planScheduled": {
+        "subject": "{plan} planınız {date} tarihinde başlıyor",
+        "heading": "Her şey hazır, {business}",
+        "body": "{plan} planınız ({amount}) {date} tarihinde başlıyor. O zamana kadar ücret alınmaz; planınızı istediğiniz zaman değiştirebilir ya da iptal edebilirsiniz.",
+        "button": "Faturalandırmayı açın"
+      },
+      "subscriptionStarted": {
+        "subject": "Teşekkürler: {plan} planınız etkin",
+        "heading": "{plan} planınız etkin",
+        "body": "Abone olduğunuz için teşekkürler. {business} yayında kalıyor; planınız {date} tarihinde yenilenecek. Rezervasyon ödemeleri yine doğrudan size gelir, biz hiçbir zaman komisyon almayız.",
+        "button": "Faturalandırmayı açın"
+      },
+      "paymentFailed": {
+        "subject": "{business} için ödemenizi alamadık",
+        "heading": "Ödemeniz gerçekleşmedi",
+        "body": "{business} yayında kalsın diye lütfen {date} tarihine kadar kartınızı güncelleyin. Bu sürede ödemeyi yeniden deneyeceğiz.",
+        "button": "Kartınızı güncelleyin"
+      },
+      "paymentRecovered": {
+        "subject": "Ödeme alındı: {business} yayında",
+        "heading": "Teşekkürler, ödemeniz alındı",
+        "body": "{plan} planınız yeniden etkin ve {business} yayında. Planınız {date} tarihinde yenilenecek.",
+        "button": "Faturalandırmayı açın"
+      },
+      "cancelScheduled": {
+        "subject": "Planınız {date} tarihinde sona eriyor",
+        "heading": "Planınız iptal edildi",
+        "body": "{business} {date} tarihine kadar yayında kalacak. Fikrinizi değiştirirseniz o tarihe kadar faturalandırma sayfasından planınızı sürdürebilirsiniz.",
+        "button": "Planımı sürdür"
+      },
+      "subscriptionEnded": {
+        "subject": "{business} için planınız sona erdi",
+        "heading": "Planınız sona erdi",
+        "body": "{business} için planınız iptal edildi. İlanlarınız ödediğiniz dönemin sonuna kadar görünür kalır, sonra gizlenir; hiçbir şey silinmez. Yayında kalmak için istediğiniz zaman bir plan seçebilirsiniz.",
+        "button": "Plan seçin"
+      },
+      "graceEnded": {
+        "subject": "{business} gizlendi: ödeme hâlâ bekliyor",
+        "heading": "İlanlarınız gizlendi",
+        "body": "Ödemenizi hâlâ alamadığımız için {business} müşterilere görünmüyor. Hiçbir şey silinmedi: kartınızı güncellediğinizde ilanlarınız yeniden yayına girer.",
+        "button": "Kartınızı güncelleyin"
       }
     },
     "noticeFooter": "Bu e-postayı Bizim Event'te işletme hesabınız olduğu için alıyorsunuz."
@@ -224,7 +278,8 @@
     "faq5a": "Hayır — tek dil yeterli. Müşteriler diğer dilde yedek olarak bunu görür; dilediğiniz zaman çeviri ekleyebilirsiniz.",
     "testimonialsTitle": "Bizim Event'teki işletmelerden",
     "finalTitle": "Hazır olduğunuzda başlayın",
-    "finalBody": "Şimdi başlayın, ilerledikçe kaydedin ve her şey hazır olduğunda gönderin."
+    "finalBody": "Şimdi başlayın, ilerledikçe kaydedin ve her şey hazır olduğunda gönderin.",
+    "pricingLink": "Fiyatları ve ücretsiz denemenin nasıl işlediğini görün"
   },
   "businessStart": {
     "title": "Ne eklemek istiyorsunuz?",
@@ -269,7 +324,9 @@
     "address": "Adres",
     "currency": "Para birimi",
     "noAddress": "Henüz adres yok",
-    "comingNext": "Faturalandırma, talepler ve takviminiz yakında burada olacak."
+    "comingNext": "Talepler ve takviminiz yakında burada olacak.",
+    "billing": "Faturalandırma",
+    "choosePlan": "Plan seçin"
   },
   "wizard": {
     "stepOf": "Adım {current} / {total}",
@@ -623,7 +680,8 @@
     "back": "Kuyruğa dön",
     "approveListing": "İlanı onayla",
     "openBusiness": "İşletmeyi aç",
-    "notAdmin": "Bu sayfa yöneticiler içindir."
+    "notAdmin": "Bu sayfa yöneticiler içindir.",
+    "billing": "Faturalandırma"
   },
   "validation": {
     "required": "Zorunlu",
@@ -675,7 +733,15 @@
     "last_listing": "Bir işletmenin en az bir ilanı olmalı.",
     "not_deletable": "Yalnızca taslaklar silinebilir. Yayındaki ilanı duraklatabilirsiniz.",
     "not_pending": "Bu artık inceleme beklemiyor.",
-    "invalid_youtube": "Bir YouTube video bağlantısı yapıştırın."
+    "invalid_youtube": "Bir YouTube video bağlantısı yapıştırın.",
+    "billing_disabled": "Online ödeme henüz açık değil.",
+    "billing_failed": "Ödeme hizmeti yanıt vermedi. Bir dakika sonra yeniden deneyin.",
+    "already_subscribed": "Bu işletmenin zaten bir planı var. Değiştirmek için Faturalandırmayı yönet'i kullanın.",
+    "no_billing_account": "Yönetilecek bir plan yok. Önce bir plan seçin.",
+    "comped": "Bu işletme ücretsiz.",
+    "has_paid_subscription": "Bu işletme Stripe üzerinden ödüyor. Önce Stripe'taki aboneliği iptal edin.",
+    "token_expired": "Bu bağlantının süresi doldu. Geri dönüp yeniden deneyin.",
+    "not_approved_yet": "İşletmeniz onaylandıktan sonra plan seçebilirsiniz."
   },
   "cities": {
     "title": "Şehirleri keşfedin",
@@ -695,5 +761,190 @@
     "businessBody": "Şimdi ekleyin, arama açılır açılmaz müşteriler sizi bulsun. İlk 3 ay ücretsiz.",
     "otherCities": "Diğer şehirler",
     "browseCities": "Şehirlere göz atın"
+  },
+  "billing": {
+    "title": "Faturalandırma",
+    "back": "İşletmeye dön",
+    "trialTitle": "Ücretsiz deneme",
+    "trialEndingTitle": "Ücretsiz deneme süreniz bitiyor",
+    "trialBody": "{days} gün kaldı: deneme süreniz {date} tarihinde bitiyor. Şimdi bir plan seçerseniz o tarihe kadar ödeme yapmazsınız.",
+    "scheduledTitle": "{plan} planınız {date} tarihinde başlıyor",
+    "scheduledBody": "{plan} planı ({amount}) seçtiniz. O tarihe kadar hiçbir ödeme yapmazsınız.",
+    "activeTitle": "{plan} plan",
+    "activeBody": "{interval, select, month {Aylık {amount}} other {Yıllık {amount}}}; {date} tarihinde yenilenir.",
+    "endingTitle": "Planınız {date} tarihinde sona eriyor",
+    "endingBody": "İlanlarınız o tarihe kadar yayında kalır. Fikrinizi değiştirdiyseniz Faturalandırmayı yönet bölümünden planınızı sürdürebilirsiniz.",
+    "pastDueTitle": "Ödemeniz gerçekleşmedi",
+    "pastDueBody": "İlanlarınızın yayında kalması için {date} tarihine kadar kartınızı güncelleyin. Bu sürede ödemeyi yeniden deneyeceğiz.",
+    "canceledTitle": "Plan iptal edildi",
+    "canceledBody": "İlanlarınız {date} tarihine kadar yayında. Sonrasında da yayında kalmaları için bir plan seçin.",
+    "expiredTitle": "İlanlarınız görünmüyor",
+    "expiredTrial": "Ücretsiz deneme süreniz bitti. Hiçbir şey silinmedi: bir plan seçtiğinizde ilanlarınız hemen yeniden yayına girer.",
+    "expiredPayment": "Ödemenizi alamadık. Hiçbir şey silinmedi: yeniden yayına girmek için bir plan seçin.",
+    "expiredCanceled": "Planınız sona erdi. Hiçbir şey silinmedi: yeniden yayına girmek için bir plan seçin.",
+    "compedTitle": "Ücretsiz",
+    "compedBody": "Bizim Event bu işletme sayfasını ücretsiz yaptı. Ödemeniz gereken bir şey yok.",
+    "notApprovedTitle": "Faturalandırma onaydan sonra başlar",
+    "notApprovedBody": "90 günlük ücretsiz deneme süreniz işletmeniz onaylandığında başlar. Planınızı o zaman seçebilirsiniz.",
+    "choosePlan": "Plan seçin",
+    "perMonth": "aylık",
+    "perYear": "yıllık",
+    "yearlySaving": "2 ay bedava",
+    "chooseMonthly": "Aylık planı seç",
+    "chooseYearly": "Yıllık planı seç",
+    "startsAfterTrial": "İlk ödeme, ücretsiz deneme süreniz bittiğinde {date} tarihinde.",
+    "startsNow": "Bugün ödersiniz, ilanlarınız hemen yayına girer.",
+    "startsNowLive": "Bugün ödersiniz, ilanlarınız yayında kalır.",
+    "startsAfterTrialExtra": "İlk ödeme {date} tarihinde. Ücretsiz deneme süreniz biraz daha erken bitiyor; aradaki günler de ücretsiz.",
+    "manage": "Faturalandırmayı yönet",
+    "manageHint": "Kartınızı güncelleyin, faturalarınızı indirin, aylık ile yıllık arasında geçiş yapın ya da iptal edin.",
+    "redirecting": "Güvenli ödeme sayfası açılıyor…",
+    "checkoutSuccess": "Teşekkürler! Planınız hazır.",
+    "checkoutProcessing": "Ödemenizi doğruluyoruz. Birazdan bu sayfayı yenileyin.",
+    "checkoutCancelled": "Ödeme iptal edildi. Sizden ücret alınmadı.",
+    "disabled": "Online ödeme henüz açılmadı. Ücretsiz deneme süreniz normal şekilde devam ediyor.",
+    "noCommission": "Rezervasyon ödemeleri müşterilerinizden doğrudan size gelir. Bizim Event hiçbir zaman komisyon almaz.",
+    "billedInGbp": "Stripe üzerinden İngiliz sterlini (GBP) olarak faturalandırılır; kartınız başka bir para birimindeyse bankanız çevirir. İstediğiniz zaman iptal edebilirsiniz.",
+    "devMode": "Test modu: ödemeler bu bilgisayarda canlandırılır, ücret alınmaz.",
+    "stripeTestMode": "Stripe test modu: 4242 4242 4242 4242 kartını, ileri bir tarih ve herhangi bir CVC ile kullanın.",
+    "bannerTrial": "Yayındasınız. Ücretsiz deneme sürenizin bitmesine {days} gün var: {date} sonrasında da yayında kalmak için bir plan seçin.",
+    "bannerTrialEnding": "Ücretsiz deneme süreniz {date} tarihinde bitiyor. İlanlarınız yayında kalsın diye bir plan seçin.",
+    "bannerExpired": "İlanlarınız görünmüyor. Yeniden yayına girmek için bir plan seçin.",
+    "bannerPastDue": "Ödemeniz gerçekleşmedi. Yayında kalmak için {date} tarihine kadar kartınızı güncelleyin.",
+    "bannerEnding": "Planınız {date} tarihinde sona eriyor. İlanlarınız o tarihe kadar yayında.",
+    "bannerCanceled": "Planınız iptal edildi. İlanlarınız {date} tarihine kadar yayında.",
+    "openBilling": "Faturalandırmayı aç"
+  },
+  "pricing": {
+    "metaTitle": "Mekanlar, ikram firmaları ve sanatçılar için fiyatlar",
+    "metaDescription": "İşletmenizi Bizim Event'e 90 gün ücretsiz ekleyin, sonra aylık {monthly} ya da yıllık {yearly}. Rezervasyonlardan komisyon yok.",
+    "title": "İşletme sayfanız için tek ve sade bir fiyat",
+    "intro": "Onaylandığınız günden itibaren 90 gün ücretsiz. Sonra aylık {monthly} ya da yıllık {yearly}. Komisyon yok, hiçbir zaman.",
+    "monthly": "Aylık",
+    "yearly": "Yıllık",
+    "perMonth": "aylık",
+    "perYear": "yıllık",
+    "yearlyNote": "2 ay bedava",
+    "afterTrial": "90 günlük ücretsiz denemeden sonra",
+    "includedTitle": "Her işletme sayfasında",
+    "included": {
+      "listings": "Sunduğunuz her salon ya da menü için 20 ilana kadar",
+      "languages": "Dünyanın her yerindeki Türkçe konuşan topluluk için Türkçe ve İngilizce sayfa",
+      "details": "Her ilan için fotoğraflar, fiyatlar, kapasiteler ve ayrıntılar",
+      "direct": "Müşteriler size doğrudan ulaşır ve doğrudan size öder",
+      "noCommission": "Komisyon da rezervasyon ücreti de yok",
+      "cancel": "İstediğiniz zaman iptal"
+    },
+    "howTitle": "Ücretsiz deneme nasıl işler?",
+    "how": {
+      "add": "İşletmenizi ve ilanlarınızı ekleyin. Ücretsiz.",
+      "approve": "Kontrol edip onaylıyoruz, genellikle 2 iş günü içinde. 90 günlük ücretsiz deneme süreniz o gün başlar.",
+      "choose": "Aylık ya da yıllık planı dilediğiniz zaman seçin. Deneme süresi bitene kadar ödeme yapmazsınız.",
+      "hidden": "Deneme bittiğinde plan seçmediyseniz ilanlarınız gizlenir, asla silinmez. Bir plan seçerek yeniden yayına girersiniz."
+    },
+    "faqTitle": "Sorular",
+    "faq": {
+      "customersQ": "Müşteriler bir şey öder mi?",
+      "customersA": "Hayır. Arama, teklif isteme ve rezervasyon müşteriler için ücretsizdir.",
+      "commissionQ": "Rezervasyonlarımdan pay alıyor musunuz?",
+      "commissionA": "Asla. Kaporalar ve ödemeler müşterinizden doğrudan size gelir. Bizim Event rezervasyon ödemelerine aracılık etmez.",
+      "currencyQ": "Hangi para biriminde ödeyeceğim?",
+      "currencyA": "Abonelikler Stripe üzerinden İngiliz sterlini (GBP) ile faturalandırılır. Kartınız başka bir para birimindeyse bankanız çevirir.",
+      "multipleQ": "Birden fazla işletmem varsa?",
+      "multipleA": "Her işletme sayfasının kendi planı ve kendi ücretsiz deneme süresi vardır. Bir işletme sayfasında, örneğin bir mekanın salonları gibi, 20 ilana kadar yer alabilir.",
+      "cancelQ": "İptal edebilir miyim?",
+      "cancelA": "Evet, faturalandırma sayfanızdan istediğiniz zaman. İlanlarınız ödediğiniz dönemin sonuna kadar yayında kalır.",
+      "failedQ": "Bir ödeme başarısız olursa ne olur?",
+      "failedA": "Size e-posta göndeririz ve kartınızı güncellemeniz için ilanlarınızı 7 gün daha yayında tutarız."
+    },
+    "ctaTitle": "İşletmenizi ücretsiz ekleyin",
+    "ctaBody": "Yaklaşık 15 dakika sürer. Birkaç fotoğraf ve fiyatlarınız yanınızda olsun.",
+    "cta": "Ücretsiz ilanınıza başlayın"
+  },
+  "adminBilling": {
+    "title": "Faturalandırma",
+    "setupTitle": "Stripe kurulumu",
+    "provider": {
+      "stripe": "Stripe, {mode, select, live {canlı mod} other {test modu}}",
+      "dev": "Simülatör (Stripe anahtarı yok; yalnızca geliştirme)",
+      "disabled": "Kurulmadı: henüz plan satın alınamıyor"
+    },
+    "secretKey": "Gizli anahtar (STRIPE_SECRET_KEY)",
+    "webhookSecret": "Webhook imzalama anahtarı (STRIPE_WEBHOOK_SECRET)",
+    "tax": "Stripe Tax (STRIPE_TAX_ENABLED)",
+    "set": "Tanımlı",
+    "missing": "Eksik",
+    "off": "Kapalı",
+    "webhookHelp": "Stripe → Developers → Webhooks bölümünde bu adres için aşağıdaki olaylarla bir uç nokta ekleyin, imzalama anahtarını Vercel'de STRIPE_WEBHOOK_SECRET olarak kaydedin ve yeniden yayına alın.",
+    "checkStripe": "Stripe bağlantısını kontrol et",
+    "checkOk": "Bağlantı tamam. Aylık ve yıllık fiyatlar ile faturalandırma portalı Stripe'ta hazır.",
+    "liveWarning": "Canlı ödemeler için Vercel Pro gerekir: Hobby planı ticari kullanıma izin vermez.",
+    "metricsTitle": "Abonelikler",
+    "mrr": "Aylık yinelenen gelir",
+    "paying": "Ödeyen",
+    "payingSplit": "{monthly} aylık, {yearly} yıllık",
+    "trial": "Ücretsiz denemede",
+    "trialEnding": "{count, plural, =0 {Bu hafta biten yok} other {# tanesi bu hafta bitiyor}}",
+    "scheduled": "Planı denemeden sonra başlayacak",
+    "pastDue": "Ödeme başarısız, ek sürede",
+    "hidden": "Gizli",
+    "comped": "Ücretsiz",
+    "testNote": "{count, plural, =0 {Test işletmesi yok.} other {# test işletmesi (@bizimevent.test) sayılmıyor.}}",
+    "listTitle": "İşletmeler",
+    "filter": {
+      "all": "Tümü",
+      "trial": "Deneme",
+      "paying": "Ödeyen",
+      "scheduled": "Deneme sonrası başlayan",
+      "past_due": "Ödeme başarısız",
+      "hidden": "Gizli",
+      "comped": "Ücretsiz"
+    },
+    "business": "İşletme",
+    "owner": "Sahibi",
+    "status": "Durum",
+    "actions": "İşlemler",
+    "testTag": "Test",
+    "extend": "Denemeyi uzat",
+    "extendDays": "+{days} gün",
+    "comp": "Ücretsiz yap",
+    "uncomp": "Ücretsiz erişimi bitir",
+    "openInStripe": "Stripe'ta aç",
+    "empty": "Burada işletme yok.",
+    "prev": "Önceki",
+    "next": "Sonraki",
+    "done": "Kaydedildi.",
+    "state": {
+      "trial": "{date} tarihine kadar deneme",
+      "scheduled": "{date} tarihinden itibaren {plan}",
+      "active": "{plan}, {date} tarihinde yenilenir",
+      "ending": "{plan}, {date} tarihinde bitiyor",
+      "past_due": "Ödeme başarısız, {date} tarihine kadar ek süre",
+      "canceled": "İptal edildi, {date} tarihine kadar yayında",
+      "expired": "Gizli: {reason, select, trial_ended {deneme bitti} payment_failed {ödeme başarısız} other {plan bitti}}",
+      "comped": "Ücretsiz"
+    }
+  },
+  "devBilling": {
+    "checkoutTitle": "Test ödeme sayfası",
+    "note": "Bu sayfa yalnızca Stripe anahtarı olmayan geliştirme kopyalarında var. Hiçbir ücret alınmaz.",
+    "summary": "{business} için {plan} plan: {interval, select, month {aylık} other {yıllık}} {amount}",
+    "trialNote": "{date} tarihine kadar ücretsiz, sonra ücretlendirilir.",
+    "pay": "Test kartıyla öde",
+    "cancel": "Vazgeç",
+    "portalTitle": "Test faturalandırma portalı",
+    "current": "Stripe durumu: {status}",
+    "action": {
+      "switch_monthly": "Aylık plana geç",
+      "switch_yearly": "Yıllık plana geç",
+      "cancel_at_period_end": "Dönem sonunda iptal et",
+      "resume": "İptal etme",
+      "cancel_now": "Hemen iptal et",
+      "payment_failed": "Başarısız ödeme dene",
+      "payment_succeeded": "Başarılı ödeme dene"
+    },
+    "back": "Bizim Event'e dön",
+    "done": "Tamam.",
+    "expired": "Bu test bağlantısının süresi doldu. Geri dönüp yeniden deneyin."
   }
 }

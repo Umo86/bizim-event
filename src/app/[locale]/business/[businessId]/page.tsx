@@ -4,13 +4,14 @@ import { Suspense } from "react";
 import { Link } from "@/i18n/navigation";
 import { buttonVariants } from "@/components/ui/button";
 import { Notice, ProgressBar } from "@/components/ui/form";
+import { BillingBanner } from "@/components/billing/billing-status";
 import { AddListingButton } from "@/components/business/listing-actions";
 import { StatusBadge } from "@/components/business/status-badge";
 import { onPhotoText, PhotoBackdrop } from "@/components/cities/photo-backdrop";
 import { featuredCityFor } from "@/content/cities";
 import { WIZARD_STEPS, type ListingType } from "@/lib/listing-config";
 import { pickLocalized } from "@/lib/utils";
-import { businessWrite } from "@/server/dal";
+import { billingDal, businessWrite } from "@/server/dal";
 import { asLocale, loadOr404, requirePageContext } from "@/server/page-helpers";
 
 export const metadata = { robots: { index: false } };
@@ -32,6 +33,9 @@ async function Overview({ params, searchParams }: PageProps<"/[locale]/business/
   const ctx = await requirePageContext(locale, `/business/${businessId}`);
   const view = await loadOr404(() => businessWrite.getOwnerBusiness(ctx, businessId));
   const { business } = view;
+  // Billing is the owner's: managers see the plain approval banner.
+  const billing =
+    view.role === "owner" && business.status === "approved" ? await billingDal.getBilling(ctx, businessId) : null;
   const t = await getTranslations({ locale, namespace: "businessOverview" });
   const tl = await getTranslations({ locale, namespace: "listingTypes" });
   const tw = await getTranslations({ locale, namespace: "wizard" });
@@ -114,7 +118,15 @@ async function Overview({ params, searchParams }: PageProps<"/[locale]/business/
           </Link>
         </Notice>
       ) : null}
-      {business.status === "approved" ? (
+      {business.status === "approved" && billing?.state ? (
+        <BillingBanner
+          state={billing.state}
+          businessId={businessId}
+          locale={locale}
+          timeZone={business.timezone}
+          approvedLabel={t("approvedBanner")}
+        />
+      ) : business.status === "approved" ? (
         <Notice tone="success">
           {view.subscription?.status === "trialing" && view.subscription.trialEndsAt
             ? t("approvedTrialBanner", {

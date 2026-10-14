@@ -297,9 +297,9 @@ for (const s of SCENARIOS) {
       });
       await waitForEmails(email, "businessApproved", 1);
       await page.goto(`/${s.locale}/business/${businessId}`);
-      await expect(
-        visible(main.getByText(t.businessOverview.approvedTrialBanner.split("{date}")[0].trim())),
-      ).toBeVisible();
+      // The owner sees the free trial and a way to choose a plan.
+      await expect(visible(main.getByText(t.billing.bannerTrial.split("{")[0].trim()))).toBeVisible();
+      await expect(main.getByRole("link", { name: t.billing.choosePlan })).toBeVisible();
       await snap(page, `${s.type}-approved`);
     });
 

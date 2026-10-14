@@ -96,6 +96,12 @@ export default async function ListYourBusinessPage(props: PageProps<"/[locale]/l
             ))}
           </ul>
         </div>
+        <Link
+          href="/pricing"
+          className="mt-6 inline-flex min-h-11 items-center font-semibold text-primary-strong underline-offset-4 hover:underline"
+        >
+          {t("pricingLink")}
+        </Link>
       </section>
 
       {TESTIMONIALS.length ? (

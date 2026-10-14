@@ -132,13 +132,15 @@ export const subscriptions = pgTable(
     currency: varchar("currency", { length: 3 }).notNull().default("GBP"),
     stripeCustomerId: text("stripe_customer_id"),
     stripeSubscriptionId: text("stripe_subscription_id"),
+    // Stripe's own status as last reported ("trialing" while a plan chosen during the free trial waits to start).
+    stripeStatus: text("stripe_status"),
     status: subscriptionStatusEnum("status").notNull().default("trialing"),
     trialStartedAt: timestamp("trial_started_at", { withTimezone: true }),
     trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
     currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
     cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
     graceUntil: timestamp("grace_until", { withTimezone: true }),
-    // Which trial reminders (day 60/83/89) have gone out, to keep the daily job idempotent.
+    // Which trial reminders (30/7/1 days left) have gone out, to keep the daily job idempotent.
     trialRemindersSent: integer("trial_reminders_sent").array().notNull().default([]),
     ...timestamps,
   },

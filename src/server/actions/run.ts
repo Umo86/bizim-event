@@ -1,6 +1,8 @@
 import "server-only";
 import { unstable_rethrow } from "next/navigation";
+import Stripe from "stripe";
 import { ZodError } from "zod";
+import { BillingError } from "@/lib/adapters/billing";
 import { StorageError } from "@/lib/adapters/storage";
 import { captureException } from "@/lib/logger";
 import { isDalError, type DalContext } from "@/server/dal";
@@ -24,6 +26,11 @@ export async function runAction<T>(fn: (ctx: DalContext) => Promise<T>): Promise
       return { ok: false, error: "INVALID", fields: [...new Set(err.issues.map((i) => i.path.join(".")))] };
     }
     if (err instanceof StorageError) return { ok: false, error: err.code };
+    if (err instanceof BillingError) return { ok: false, error: err.code };
+    if (err instanceof Stripe.errors.StripeError) {
+      captureException(err, { where: "server-action.stripe", type: err.type, code: err.code });
+      return { ok: false, error: "billing_failed" };
+    }
     captureException(err, { where: "server-action" });
     return { ok: false, error: "UNKNOWN" };
   }

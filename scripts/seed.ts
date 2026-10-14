@@ -50,6 +50,7 @@ import {
   VENUE_TYPES,
 } from "../src/db/seed-data/taxonomy";
 import { allCountries } from "../src/lib/countries-data";
+import { PLAN_KEYS, PLANS, TRIAL_DAYS } from "../src/lib/plans";
 import { slugify } from "../src/lib/slug";
 import { unsplashImage, unsplashProfileUrl } from "../src/lib/unsplash";
 import { removeTestData, TEST_EMAIL_DOMAIN } from "../src/server/internal/test-data";
@@ -198,10 +199,8 @@ async function seedReference(db: DB) {
   }
 
   console.log("→ subscription plans (£6/month, £60/year)");
-  const plans = [
-    { key: "monthly", nameTr: "Aylık", nameEn: "Monthly", interval: "month" as const, amountMinor: 600 },
-    { key: "yearly", nameTr: "Yıllık", nameEn: "Yearly", interval: "year" as const, amountMinor: 6000 },
-  ];
+  // Amounts come from src/lib/plans.ts, the single source for the offer.
+  const plans = PLAN_KEYS.map((key) => ({ key, ...PLANS[key] }));
   for (const p of plans) {
     const [plan] = await db
       .insert(s.subscriptionPlans)
@@ -211,7 +210,10 @@ async function seedReference(db: DB) {
     await db
       .insert(s.planPrices)
       .values({ planId: plan.id, currency: "GBP", amountMinor: p.amountMinor })
-      .onConflictDoNothing();
+      .onConflictDoUpdate({
+        target: [s.planPrices.planId, s.planPrices.currency],
+        set: { amountMinor: p.amountMinor },
+      });
   }
 
   console.log("→ cities (with their featured photos)");
@@ -446,7 +448,10 @@ async function seedDemo(db: DB, password: string, url: string) {
 
   console.log("→ users");
   await createUser(db, hashed, `admin@${DEMO_DOMAIN}`, "Bizim Event Admin", "admin", "tr", "GB");
-  summary.push({ email: `admin@${DEMO_DOMAIN}`, note: "admin: approval queue at /tr/admin/approvals" });
+  summary.push({
+    email: `admin@${DEMO_DOMAIN}`,
+    note: "admin: approvals at /tr/admin/approvals, billing at /tr/admin/billing",
+  });
   // Verified, with nothing set up yet: for trying "List your business" without waiting for an email.
   await createUser(db, hashed, `newbusiness@${DEMO_DOMAIN}`, "Yeni İşletme", "customer", "tr", "GB");
   const customers = [];
@@ -544,16 +549,18 @@ async function seedDemo(db: DB, password: string, url: string) {
         businessId: biz.id,
         status: subState,
         trialStartedAt: trialStart,
-        trialEndsAt: new Date(trialStart.getTime() + 90 * DAY),
+        trialEndsAt: new Date(trialStart.getTime() + TRIAL_DAYS * DAY),
       };
       if (subState === "trialing") {
         sub.trialStartedAt = new Date(now.getTime() - between(1, 80) * DAY);
-        sub.trialEndsAt = new Date(sub.trialStartedAt.getTime() + 90 * DAY);
+        sub.trialEndsAt = new Date(sub.trialStartedAt.getTime() + TRIAL_DAYS * DAY);
       }
       if (subState === "active" || subState === "past_due") {
         sub.planId = plan.id;
-        sub.stripeCustomerId = `cus_demo_${bi}`;
-        sub.stripeSubscriptionId = `sub_demo_${bi}`;
+        // "dev_" ids: the local billing simulator can manage them; real Stripe ignores them.
+        sub.stripeCustomerId = `dev_cus_demo_${bi}`;
+        sub.stripeSubscriptionId = `dev_sub_demo_${bi}`;
+        sub.stripeStatus = subState;
         sub.currentPeriodEnd = new Date(now.getTime() + between(3, 300) * DAY);
       }
       if (subState === "past_due") sub.graceUntil = new Date(now.getTime() + 4 * DAY);
@@ -857,9 +864,11 @@ async function seedDemo(db: DB, password: string, url: string) {
     `✓ test data: ${specs.length} businesses, ${total} listings (${pub} live), ${customers.length} customers, ${reviewCount} reviews`,
   );
 
-  // One business per type in each interesting state, so there's a login for every screen.
+  // One business per type in each interesting state, so there's a login for every screen;
+  // venues also cover the other billing states (paying, payment overdue, free).
   for (const type of ["venue", "caterer", "performer"] as const) {
-    for (const state of ["trialing", "pending", "expired"]) {
+    const states = ["trialing", "pending", "expired", ...(type === "venue" ? ["active", "past_due", "comped"] : [])];
+    for (const state of states) {
       const o = owners.find((x) => x.type === type && x.state === state);
       if (o)
         summary.push({

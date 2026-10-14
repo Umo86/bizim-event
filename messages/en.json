@@ -158,6 +158,60 @@
         "heading": "We couldn't approve \"{listing}\"",
         "body": "This listing can't go live for the reason below. Your other listings aren't affected.",
         "button": "Open your dashboard"
+      },
+      "trialEnding": {
+        "subject": "Your free trial ends in {days, plural, one {# day} other {# days}}",
+        "heading": "Your free trial ends on {date}",
+        "body": "Choose a plan for {business} to stay live after your trial: {monthly} a month or {yearly} a year. You won't pay anything until the trial ends.",
+        "button": "Choose a plan"
+      },
+      "trialEnded": {
+        "subject": "Your free trial has ended: {business} is hidden",
+        "heading": "Your free trial has ended",
+        "body": "Customers can't see {business} right now. Nothing has been deleted: choose a plan and your listings go live again straight away.",
+        "button": "Choose a plan"
+      },
+      "planScheduled": {
+        "subject": "Your {plan} plan starts on {date}",
+        "heading": "You're all set, {business}",
+        "body": "Your {plan} plan ({amount}) starts on {date}. You won't be charged before then, and you can switch or cancel any time.",
+        "button": "Open billing"
+      },
+      "subscriptionStarted": {
+        "subject": "Thank you: your {plan} plan is active",
+        "heading": "Your {plan} plan is active",
+        "body": "Thanks for subscribing. {business} stays live and your plan renews on {date}. Payments for bookings still go straight to you; we never take commission.",
+        "button": "Open billing"
+      },
+      "paymentFailed": {
+        "subject": "We couldn't take your payment for {business}",
+        "heading": "Your payment didn't go through",
+        "body": "Please update your card by {date} to keep {business} live. We'll try the payment again in the meantime.",
+        "button": "Update your card"
+      },
+      "paymentRecovered": {
+        "subject": "Payment received: {business} is live",
+        "heading": "Thanks, your payment went through",
+        "body": "Your {plan} plan is active again and {business} is live. It renews on {date}.",
+        "button": "Open billing"
+      },
+      "cancelScheduled": {
+        "subject": "Your plan ends on {date}",
+        "heading": "Your plan is cancelled",
+        "body": "{business} stays live until {date}. Changed your mind? You can keep your plan from the billing page any time before then.",
+        "button": "Keep my plan"
+      },
+      "subscriptionEnded": {
+        "subject": "Your plan for {business} has ended",
+        "heading": "Your plan has ended",
+        "body": "Your plan for {business} has been cancelled. Your listings stay visible until the end of the period you've paid for, then they're hidden; nothing is deleted. Choose a plan any time to stay live.",
+        "button": "Choose a plan"
+      },
+      "graceEnded": {
+        "subject": "{business} is hidden: payment still due",
+        "heading": "Your listings are hidden",
+        "body": "We still couldn't take your payment, so {business} is hidden from customers. Nothing has been deleted: update your card and your listings go live again.",
+        "button": "Update your card"
       }
     },
     "noticeFooter": "You're receiving this because you have a business account on Bizim Event."
@@ -224,7 +278,8 @@
     "faq5a": "No — one language is enough. Customers see the other language as a fallback, and you can add a translation whenever you like.",
     "testimonialsTitle": "From businesses on Bizim Event",
     "finalTitle": "Ready when you are",
-    "finalBody": "Start now, save as you go, and submit when everything looks right."
+    "finalBody": "Start now, save as you go, and submit when everything looks right.",
+    "pricingLink": "See pricing and how the free trial works"
   },
   "businessStart": {
     "title": "What would you like to list?",
@@ -269,7 +324,9 @@
     "address": "Address",
     "currency": "Currency",
     "noAddress": "No address yet",
-    "comingNext": "Billing, enquiries and your calendar will appear here soon."
+    "comingNext": "Enquiries and your calendar will appear here soon.",
+    "billing": "Billing",
+    "choosePlan": "Choose a plan"
   },
   "wizard": {
     "stepOf": "Step {current} of {total}",
@@ -623,7 +680,8 @@
     "back": "Back to queue",
     "approveListing": "Approve listing",
     "openBusiness": "Open business",
-    "notAdmin": "This page is for administrators."
+    "notAdmin": "This page is for administrators.",
+    "billing": "Billing"
   },
   "validation": {
     "required": "Required",
@@ -675,7 +733,15 @@
     "last_listing": "A business needs at least one listing.",
     "not_deletable": "Only drafts can be deleted. Pause a live listing instead.",
     "not_pending": "This isn't waiting for review any more.",
-    "invalid_youtube": "Paste a YouTube video link."
+    "invalid_youtube": "Paste a YouTube video link.",
+    "billing_disabled": "Online payments aren't switched on yet.",
+    "billing_failed": "The payment service didn't respond. Try again in a minute.",
+    "already_subscribed": "This business already has a plan. Use Manage billing to change it.",
+    "no_billing_account": "There's no plan to manage yet. Choose a plan first.",
+    "comped": "This business is free of charge.",
+    "has_paid_subscription": "This business pays through Stripe. Cancel that subscription in Stripe first.",
+    "token_expired": "This link has expired. Go back and try again.",
+    "not_approved_yet": "You can choose a plan once your business is approved."
   },
   "cities": {
     "title": "Explore by city",
@@ -695,5 +761,190 @@
     "businessBody": "List it now so customers find you as soon as search opens. The first 3 months are free.",
     "otherCities": "Other cities",
     "browseCities": "Browse cities"
+  },
+  "billing": {
+    "title": "Billing",
+    "back": "Back to business",
+    "trialTitle": "Free trial",
+    "trialEndingTitle": "Your free trial ends soon",
+    "trialBody": "{days, plural, one {# day} other {# days}} left: your trial ends on {date}. Choose a plan now and you won't pay until then.",
+    "scheduledTitle": "Your {plan} plan starts on {date}",
+    "scheduledBody": "You've chosen the {plan} plan ({amount}). You won't pay anything before then.",
+    "activeTitle": "{plan} plan",
+    "activeBody": "{interval, select, month {{amount} a month} other {{amount} a year}}, renewing on {date}.",
+    "endingTitle": "Your plan ends on {date}",
+    "endingBody": "Your listings stay live until then. Changed your mind? Keep your plan in Manage billing.",
+    "pastDueTitle": "Your payment didn't go through",
+    "pastDueBody": "Update your card by {date} to keep your listings live. We'll keep trying in the meantime.",
+    "canceledTitle": "Plan cancelled",
+    "canceledBody": "Your listings stay live until {date}. Choose a plan to keep them live after that.",
+    "expiredTitle": "Your listings are hidden",
+    "expiredTrial": "Your free trial has ended. Nothing has been deleted: choose a plan and your listings go live again straight away.",
+    "expiredPayment": "We couldn't take your payment. Nothing has been deleted: choose a plan to go live again.",
+    "expiredCanceled": "Your plan has ended. Nothing has been deleted: choose a plan to go live again.",
+    "compedTitle": "Free of charge",
+    "compedBody": "Bizim Event has made this business page free. There's nothing to pay.",
+    "notApprovedTitle": "Billing starts after approval",
+    "notApprovedBody": "Your 90-day free trial starts when we approve your business. You can choose a plan then.",
+    "choosePlan": "Choose a plan",
+    "perMonth": "a month",
+    "perYear": "a year",
+    "yearlySaving": "2 months free",
+    "chooseMonthly": "Choose monthly",
+    "chooseYearly": "Choose yearly",
+    "startsAfterTrial": "First payment on {date}, when your free trial ends.",
+    "startsNow": "You pay today and your listings go live straight away.",
+    "startsNowLive": "You pay today and your listings stay live.",
+    "startsAfterTrialExtra": "First payment on {date}. Your free trial ends a little sooner; the days in between are free too.",
+    "manage": "Manage billing",
+    "manageHint": "Update your card, download invoices, switch between monthly and yearly, or cancel.",
+    "redirecting": "Opening secure checkout…",
+    "checkoutSuccess": "Thank you! Your plan is set up.",
+    "checkoutProcessing": "We're confirming your payment. Refresh this page in a moment.",
+    "checkoutCancelled": "Checkout cancelled. Nothing was charged.",
+    "disabled": "Online payments aren't switched on yet. Your free trial carries on as normal.",
+    "noCommission": "Booking payments go straight from your customers to you. Bizim Event never takes commission.",
+    "billedInGbp": "Billed in pounds sterling (GBP) by Stripe; if your card is in another currency, your bank converts it. Cancel any time.",
+    "devMode": "Test mode: payments are simulated on this computer and nothing is charged.",
+    "stripeTestMode": "Stripe test mode: pay with card 4242 4242 4242 4242, any future date and any CVC.",
+    "bannerTrial": "You're live. Your free trial has {days, plural, one {# day} other {# days}} left: choose a plan to stay live after {date}.",
+    "bannerTrialEnding": "Your free trial ends on {date}. Choose a plan to keep your listings live.",
+    "bannerExpired": "Your listings are hidden. Choose a plan to go live again.",
+    "bannerPastDue": "Your payment didn't go through. Update your card by {date} to stay live.",
+    "bannerEnding": "Your plan ends on {date}. Your listings stay live until then.",
+    "bannerCanceled": "Your plan is cancelled. Your listings stay live until {date}.",
+    "openBilling": "Open billing"
+  },
+  "pricing": {
+    "metaTitle": "Pricing for venues, caterers and performers",
+    "metaDescription": "List your business on Bizim Event free for 90 days, then {monthly} a month or {yearly} a year. No commission on bookings.",
+    "title": "One simple price for your business page",
+    "intro": "Free for 90 days from the day we approve you. Then {monthly} a month or {yearly} a year. No commission, ever.",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "perMonth": "a month",
+    "perYear": "a year",
+    "yearlyNote": "2 months free",
+    "afterTrial": "after your 90-day free trial",
+    "includedTitle": "Every business page includes",
+    "included": {
+      "listings": "Up to 20 listings, such as each hall or menu you offer",
+      "languages": "Your page in Turkish and English, for the Turkish-speaking community worldwide",
+      "details": "Photos, prices, capacities and details for every listing",
+      "direct": "Customers contact you and pay you directly",
+      "noCommission": "No commission and no booking fees",
+      "cancel": "Cancel any time"
+    },
+    "howTitle": "How the free trial works",
+    "how": {
+      "add": "Add your business and listings. It's free.",
+      "approve": "We check and approve it, usually within 2 business days. Your 90-day free trial starts then.",
+      "choose": "Choose monthly or yearly whenever you like. You won't pay until the trial ends.",
+      "hidden": "No plan when the trial ends? Your listings are hidden, never deleted. Choose a plan to go live again."
+    },
+    "faqTitle": "Questions",
+    "faq": {
+      "customersQ": "Do customers pay anything?",
+      "customersA": "No. Searching, enquiring and booking are free for customers.",
+      "commissionQ": "Do you take a cut of my bookings?",
+      "commissionA": "Never. Deposits and payments go directly from your customer to you. Bizim Event doesn't handle booking payments.",
+      "currencyQ": "Which currency will I pay in?",
+      "currencyA": "Subscriptions are billed in pounds sterling (GBP) by Stripe. If your card is in another currency, your bank converts it.",
+      "multipleQ": "What if I have more than one business?",
+      "multipleA": "Each business page has its own plan and its own free trial. One business page can hold up to 20 listings, such as the halls of a venue.",
+      "cancelQ": "Can I cancel?",
+      "cancelA": "Yes, any time from your billing page. Your listings stay live until the end of the period you've paid for.",
+      "failedQ": "What happens if a payment fails?",
+      "failedA": "We email you and keep your listings live for 7 days while you update your card."
+    },
+    "ctaTitle": "List your business free",
+    "ctaBody": "It takes about 15 minutes. Have a few photos and your prices to hand.",
+    "cta": "Start your free listing"
+  },
+  "adminBilling": {
+    "title": "Billing",
+    "setupTitle": "Stripe setup",
+    "provider": {
+      "stripe": "Stripe, {mode, select, live {live mode} other {test mode}}",
+      "dev": "Simulator (no Stripe keys; development only)",
+      "disabled": "Not set up: plans can't be bought yet"
+    },
+    "secretKey": "Secret key (STRIPE_SECRET_KEY)",
+    "webhookSecret": "Webhook signing secret (STRIPE_WEBHOOK_SECRET)",
+    "tax": "Stripe Tax (STRIPE_TAX_ENABLED)",
+    "set": "Set",
+    "missing": "Missing",
+    "off": "Off",
+    "webhookHelp": "In Stripe → Developers → Webhooks, add an endpoint for this URL with the events below, then put its signing secret in STRIPE_WEBHOOK_SECRET on Vercel and redeploy.",
+    "checkStripe": "Check Stripe connection",
+    "checkOk": "Connected. The monthly and yearly prices and the billing portal are ready in Stripe.",
+    "liveWarning": "Live payments need Vercel Pro: the Hobby plan doesn't allow commercial use.",
+    "metricsTitle": "Subscriptions",
+    "mrr": "Monthly recurring revenue",
+    "paying": "Paying",
+    "payingSplit": "{monthly} monthly, {yearly} yearly",
+    "trial": "On free trial",
+    "trialEnding": "{count, plural, =0 {None ending this week} other {# ending this week}}",
+    "scheduled": "Plan starts after trial",
+    "pastDue": "Payment failed, in grace",
+    "hidden": "Hidden",
+    "comped": "Free of charge",
+    "testNote": "{count, plural, =0 {No test businesses.} one {# test business (@bizimevent.test) isn't counted.} other {# test businesses (@bizimevent.test) aren't counted.}}",
+    "listTitle": "Businesses",
+    "filter": {
+      "all": "All",
+      "trial": "Trial",
+      "paying": "Paying",
+      "scheduled": "Starts after trial",
+      "past_due": "Payment failed",
+      "hidden": "Hidden",
+      "comped": "Free"
+    },
+    "business": "Business",
+    "owner": "Owner",
+    "status": "Status",
+    "actions": "Actions",
+    "testTag": "Test",
+    "extend": "Extend trial",
+    "extendDays": "+{days} days",
+    "comp": "Make free",
+    "uncomp": "End free access",
+    "openInStripe": "Open in Stripe",
+    "empty": "No businesses here.",
+    "prev": "Previous",
+    "next": "Next",
+    "done": "Saved.",
+    "state": {
+      "trial": "Trial until {date}",
+      "scheduled": "{plan} from {date}",
+      "active": "{plan}, renews {date}",
+      "ending": "{plan}, ends {date}",
+      "past_due": "Payment failed, grace until {date}",
+      "canceled": "Cancelled, live until {date}",
+      "expired": "Hidden: {reason, select, trial_ended {trial ended} payment_failed {payment failed} other {plan ended}}",
+      "comped": "Free of charge"
+    }
+  },
+  "devBilling": {
+    "checkoutTitle": "Test checkout",
+    "note": "This page only exists on development copies without Stripe keys. Nothing is charged.",
+    "summary": "{plan} plan for {business}: {amount} {interval, select, month {a month} other {a year}}",
+    "trialNote": "Free until {date}, then charged.",
+    "pay": "Pay with test card",
+    "cancel": "Cancel",
+    "portalTitle": "Test billing portal",
+    "current": "Stripe status: {status}",
+    "action": {
+      "switch_monthly": "Switch to monthly",
+      "switch_yearly": "Switch to yearly",
+      "cancel_at_period_end": "Cancel at the end of the period",
+      "resume": "Don't cancel",
+      "cancel_now": "Cancel now",
+      "payment_failed": "Simulate a failed payment",
+      "payment_succeeded": "Simulate a successful payment"
+    },
+    "back": "Back to Bizim Event",
+    "done": "Done.",
+    "expired": "This test link has expired. Go back and try again."
   }
 }

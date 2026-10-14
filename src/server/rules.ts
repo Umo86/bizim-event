@@ -1,9 +1,14 @@
 /**
- * Pure business rules (no I/O) — unit-tested in tests/unit/rules.test.ts.
+ * Pure business rules (no I/O) — unit-tested in tests/unit/rules.test.ts and tests/unit/billing-rules.test.ts.
  */
+import { GRACE_DAYS, MIN_STRIPE_TRIAL_HOURS, TRIAL_REMINDER_DAYS_LEFT, type PlanKey } from "@/lib/plans";
+
+const DAY = 864e5;
+
+export type SubscriptionStatus = "trialing" | "active" | "past_due" | "canceled" | "expired" | "comped";
 
 export type SubscriptionLike = {
-  status: "trialing" | "active" | "past_due" | "canceled" | "expired" | "comped";
+  status: SubscriptionStatus;
   trialEndsAt: Date | null;
   currentPeriodEnd: Date | null;
   graceUntil: Date | null;
@@ -125,4 +130,176 @@ export function trialDay(trialStartedAt: Date, now = new Date()): number {
 /** Monthly recurring revenue contribution in GBP minor units; yearly £60 counts as £5/month. */
 export function mrrMinor(interval: "month" | "year", amountMinor: number): number {
   return interval === "year" ? Math.round(amountMinor / 12) : amountMinor;
+}
+
+// ── Billing ───────────────────────────────────────────────────────────────────
+
+/** A subscription row as the billing screens see it. */
+export type BillingRow = SubscriptionLike & {
+  /** Stripe's own status, kept as reported ("trialing" while a chosen plan waits for the free trial to end). */
+  stripeStatus: string | null;
+  stripeSubscriptionId: string | null;
+  cancelAtPeriodEnd: boolean;
+  plan: PlanKey | null;
+};
+
+/** What the owner should be told about billing — one case per screen state. */
+export type BillingState =
+  | { kind: "trial"; endsAt: Date; daysLeft: number; endingSoon: boolean }
+  | { kind: "scheduled"; plan: PlanKey | null; startsAt: Date }
+  | { kind: "active"; plan: PlanKey | null; renewsAt: Date | null }
+  | { kind: "ending"; plan: PlanKey | null; endsAt: Date | null }
+  | { kind: "past_due"; plan: PlanKey | null; graceUntil: Date }
+  | { kind: "canceled"; liveUntil: Date }
+  | { kind: "expired"; reason: "trial_ended" | "payment_failed" | "canceled" }
+  | { kind: "comped" };
+
+/** Whole days left until `at`, rounded up (a trial ending in 3 hours has 1 day left). */
+export function daysUntil(at: Date, now = new Date()): number {
+  return Math.max(0, Math.ceil((at.getTime() - now.getTime()) / DAY));
+}
+
+/** Derives the owner-facing billing state, evaluating time-based changes lazily. */
+export function billingState(row: BillingRow, now = new Date()): BillingState {
+  const status = effectiveSubscriptionStatus(row, now);
+  switch (status) {
+    case "comped":
+      return { kind: "comped" };
+    case "trialing": {
+      const daysLeft = daysUntil(row.trialEndsAt!, now);
+      return { kind: "trial", endsAt: row.trialEndsAt!, daysLeft, endingSoon: daysLeft <= 7 };
+    }
+    case "active":
+      if (row.cancelAtPeriodEnd) return { kind: "ending", plan: row.plan, endsAt: row.currentPeriodEnd };
+      if (row.stripeStatus === "trialing" && row.currentPeriodEnd && row.currentPeriodEnd > now) {
+        return { kind: "scheduled", plan: row.plan, startsAt: row.currentPeriodEnd };
+      }
+      return { kind: "active", plan: row.plan, renewsAt: row.currentPeriodEnd };
+    case "past_due":
+      return { kind: "past_due", plan: row.plan, graceUntil: row.graceUntil! };
+    case "canceled":
+      return { kind: "canceled", liveUntil: row.currentPeriodEnd! };
+    case "expired":
+    default:
+      if (!row.stripeSubscriptionId) return { kind: "expired", reason: "trial_ended" };
+      if (row.graceUntil || row.status === "past_due") return { kind: "expired", reason: "payment_failed" };
+      return { kind: "expired", reason: "canceled" };
+  }
+}
+
+/**
+ * Our status for a Stripe subscription status. A plan chosen during the free trial is
+ * Stripe-"trialing" but already ours-"active": the card is on file and Stripe charges it
+ * when the trial ends. `null` means "leave our status alone" (checkout still in progress).
+ * A subscription Stripe cancelled because it couldn't collect payment ends straight away;
+ * one the owner cancelled stays live until the end of the period they paid for.
+ */
+export function mapStripeStatus(
+  stripeStatus: string,
+  cancellationReason?: string | null,
+): Exclude<SubscriptionStatus, "trialing" | "comped"> | null {
+  switch (stripeStatus) {
+    case "trialing":
+    case "active":
+      return "active";
+    case "past_due":
+    case "unpaid":
+      return "past_due";
+    case "canceled":
+      return cancellationReason === "payment_failed" || cancellationReason === "payment_disputed"
+        ? "expired"
+        : "canceled";
+    case "paused":
+      return "expired";
+    default:
+      return null;
+  }
+}
+
+/** The grace deadline: set once when payment first fails, kept while it stays unpaid, cleared after. */
+export function nextGraceUntil(
+  previous: { status: SubscriptionStatus; graceUntil: Date | null },
+  nextStatus: SubscriptionStatus,
+  now = new Date(),
+): Date | null {
+  if (nextStatus !== "past_due") return null;
+  if (previous.status === "past_due" && previous.graceUntil) return previous.graceUntil;
+  return new Date(now.getTime() + GRACE_DAYS * DAY);
+}
+
+/**
+ * Which trial reminder is due (30, 7 or 1 days left), if any. When several are due (the
+ * daily job missed a run) only the most urgent goes out; all of them are marked as sent.
+ * Only for free trials with no plan chosen yet.
+ */
+export function dueTrialReminder(
+  sub: { status: SubscriptionStatus; trialEndsAt: Date | null; trialRemindersSent: number[] },
+  now = new Date(),
+): { send: number; markSent: number[] } | null {
+  if (sub.status !== "trialing" || !sub.trialEndsAt || sub.trialEndsAt <= now) return null;
+  const left = daysUntil(sub.trialEndsAt, now);
+  const due = TRIAL_REMINDER_DAYS_LEFT.filter((d) => left <= d && !sub.trialRemindersSent.includes(d));
+  if (due.length === 0) return null;
+  return { send: Math.min(...due), markSent: [...sub.trialRemindersSent, ...due] };
+}
+
+/**
+ * When the first payment falls for a plan chosen now. During the free trial it waits for the
+ * trial to end; Stripe needs that date at least 48 hours ahead, so a plan chosen in the
+ * trial's last two days starts a little later (the extra days are free). Otherwise the
+ * owner pays straight away (null).
+ */
+export function firstPaymentAt(state: BillingState, now = new Date()): Date | null {
+  if (state.kind !== "trial") return null;
+  return new Date(Math.max(state.endsAt.getTime(), now.getTime() + MIN_STRIPE_TRIAL_HOURS * 3600e3));
+}
+
+export type BillingNoticeKind =
+  | "planScheduled"
+  | "subscriptionStarted"
+  | "paymentFailed"
+  | "paymentRecovered"
+  | "cancelScheduled"
+  | "subscriptionEnded";
+
+type NoticeRow = {
+  status: SubscriptionStatus;
+  stripeSubscriptionId: string | null;
+  stripeStatus: string | null;
+  cancelAtPeriodEnd: boolean;
+  currentPeriodEnd: Date | null;
+  graceUntil: Date | null;
+};
+
+/**
+ * The email (if any) a change to a subscription deserves. Computed from the row before and
+ * after the change, so replaying the same Stripe state never sends the same email twice.
+ */
+export function billingNoticeFor(
+  before: NoticeRow,
+  after: NoticeRow,
+): { kind: BillingNoticeKind; date: Date | null } | null {
+  if (after.status === "active") {
+    if (before.status === "past_due" || (before.status === "expired" && before.graceUntil)) {
+      return { kind: "paymentRecovered", date: after.currentPeriodEnd };
+    }
+    if (before.status !== "active" || before.stripeSubscriptionId !== after.stripeSubscriptionId) {
+      return after.stripeStatus === "trialing"
+        ? { kind: "planScheduled", date: after.currentPeriodEnd }
+        : { kind: "subscriptionStarted", date: after.currentPeriodEnd };
+    }
+    if (!before.cancelAtPeriodEnd && after.cancelAtPeriodEnd) {
+      return { kind: "cancelScheduled", date: after.currentPeriodEnd };
+    }
+    return null;
+  }
+  if (after.status === "past_due" && before.status !== "past_due")
+    return { kind: "paymentFailed", date: after.graceUntil };
+  if (
+    (after.status === "canceled" || after.status === "expired") &&
+    (before.status === "active" || before.status === "past_due")
+  ) {
+    return { kind: "subscriptionEnded", date: after.status === "canceled" ? after.currentPeriodEnd : null };
+  }
+  return null;
 }

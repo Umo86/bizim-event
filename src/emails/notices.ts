@@ -4,6 +4,7 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { sendEmail } from "@/lib/adapters/email";
 import { env } from "@/lib/env";
 import { captureException } from "@/lib/logger";
+import { formatPlanAmount, PLANS, type PlanKey } from "@/lib/plans";
 import { isLocale, type AppLocale } from "@/i18n/routing";
 import { NoticeEmail } from "./notice-email";
 
@@ -15,13 +16,27 @@ export type NoticeKind =
   | "businessRejected"
   | "listingApproved"
   | "listingChangesRequested"
-  | "listingRejected";
+  | "listingRejected"
+  // Billing
+  | "trialEnding"
+  | "trialEnded"
+  | "planScheduled"
+  | "subscriptionStarted"
+  | "paymentFailed"
+  | "paymentRecovered"
+  | "cancelScheduled"
+  | "subscriptionEnded"
+  | "graceEnded";
 
 type Params = {
   business?: string;
   listing?: string;
   note?: string | null;
-  trialEndsAt?: Date | null;
+  /** The date the message is about: trial end, renewal, grace deadline… */
+  date?: Date | string | null;
+  /** Days left, for trial reminders. */
+  days?: number;
+  plan?: PlanKey | null;
   /** Path after /<locale>, e.g. "/business/<id>" */
   path: string;
 };
@@ -39,9 +54,14 @@ export async function sendNotice(kind: NoticeKind, to: string, locale: string | 
     const values = {
       business: params.business ?? "",
       listing: params.listing ?? "",
-      date: params.trialEndsAt
-        ? format.dateTime(params.trialEndsAt, { day: "numeric", month: "long", year: "numeric" })
+      date: params.date
+        ? format.dateTime(new Date(params.date), { day: "numeric", month: "long", year: "numeric" })
         : "",
+      days: params.days ?? 0,
+      plan: params.plan ? (loc === "tr" ? PLANS[params.plan].nameTr : PLANS[params.plan].nameEn) : "",
+      amount: params.plan ? formatPlanAmount(params.plan, loc) : "",
+      monthly: formatPlanAmount("monthly", loc),
+      yearly: formatPlanAmount("yearly", loc),
     };
     const base = (env().NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
     const props = {

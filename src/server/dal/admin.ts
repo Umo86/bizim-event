@@ -21,7 +21,7 @@ import {
   venueTypes,
 } from "@/db/schema";
 import { qualified } from "@/db/sql";
-import { TRIAL_DAYS } from "@/lib/adapters/billing";
+import { TRIAL_DAYS } from "@/lib/plans";
 import { reviewNoteInput } from "@/lib/validation/business";
 import { notifyUser } from "@/server/internal/notify";
 import { refreshBusinessVisibility } from "@/server/internal/visibility";

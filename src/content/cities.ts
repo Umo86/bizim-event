@@ -292,6 +292,7 @@ export const BACKDROPS = {
   businessFinal: { city: "amsterdam" },
   businessStart: { city: "izmir" },
   businessList: { city: "dubai" },
+  pricing: { city: "manchester" },
   signIn: { city: "istanbul" },
   signUp: { city: "paris" },
   account: { city: "sydney" },

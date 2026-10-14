@@ -10,20 +10,20 @@ export async function SiteFooter() {
       links: [
         { href: "/about", label: t("about") },
         { href: "/how-it-works", label: t("howItWorks") },
-        { href: "/blog", label: t("blog") },
+        { href: "/help", label: t("help") },
         { href: "/contact", label: t("contact") },
       ],
     },
     {
       title: t("forBusinesses"),
       links: [
-        { href: "/list-your-business", label: t("forBusinesses") },
+        { href: "/list-your-business", label: t("listBusiness") },
         { href: "/pricing", label: t("pricing") },
-        { href: "/help", label: t("help") },
+        { href: "/legal/business-terms", label: t("businessTerms") },
       ],
     },
     {
-      title: t("terms"),
+      title: t("legal"),
       links: [
         { href: "/legal/terms", label: t("terms") },
         { href: "/legal/privacy", label: t("privacy") },

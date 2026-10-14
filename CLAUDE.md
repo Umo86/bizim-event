@@ -134,6 +134,18 @@ tests/unit, tests/integration
 - Admin billing (`/[locale]/admin/billing`): setup checklist, MRR and counts (test businesses excluded; yearly = £5/month),
   filters, extend trial (7/14/30/90 days), free access on/off — all audited.
 
+### Content and legal pages
+
+- About, How it works, Help and Contact copy lives in messages (`about`, `howItWorks`, `help`, `contact`). The legal
+  documents (terms of use, business terms, privacy, cookies) live in `src/content/legal/*.ts` as bilingual structured
+  text — links written `[label](/path)`, rendered by `RichText` — served at `/[locale]/legal/[doc]` and prerendered.
+  Prices, trial and grace in them come from `src/lib/plans.ts`. The Turkish versions say the English one applies.
+- Company details for those pages come from `src/content/company.ts` (null = left out) and the contact address from
+  `CONTACT_EMAIL` (`src/server/contact.ts`). Never invent either.
+- Keep the privacy policy's provider list in step with `src/lib/adapters`, and the cookie policy with the cookies the
+  site sets (`src/i18n/routing.ts`, `src/proxy.ts`, Better Auth).
+- Every link must lead somewhere: the page crawl (`tests/e2e/pages.spec.ts`) fails on a link that 404s.
+
 ### Cities on the homepage (interim, before Phase 4)
 
 - Featured cities, their taglines and photos live in `src/content/cities.ts` (the seed reads the same list). Photos are
@@ -171,7 +183,8 @@ pnpm db:generate     # SQL migration from schema changes
 pnpm db:migrate      # apply migrations (uses DATABASE_URL_UNPOOLED)
 pnpm db:seed         # reference data + test data (once); --reset recreates it, --remove-demo deletes it,
                      # --no-demo = reference data only
-pnpm db:status       # read-only summary: migrations, reference data, businesses, test accounts
+pnpm db:status       # read-only summary: migrations (applied of total), reference data, businesses, admins
+pnpm db:make-admin   # <email> [--remove]: give a verified account admin rights (Database workflow option too)
 pnpm r2:cors         # one-off: allow browser uploads to the R2 bucket from the app's origin
 pnpm format          # Prettier (printWidth 120)
 ```
@@ -199,7 +212,12 @@ they are skipped when it's unset.
   copy comes from `messages/*.json`; wrap CSS and text locators in `visible()` — Next keeps recently visited pages
   mounted but hidden, so their inputs (same ids) are still in the DOM; each browser context gets its own client IP for
   the auth rate limits (3 logins per IP in quick succession); `E2E_SCREENSHOTS=dir` saves a full-page screenshot per
-  step.
+  step. Specs that change seeded accounts (billing, business review) re-seed when Playwright retries them.
+- `tests/e2e/pages.spec.ts` opens every page as a visitor, customer, owners in each state and the admin (EN desktop and
+  TR phone; TR phone only on CI pushes, both on the weekly/manual run via `E2E_FULL_CRAWL=1`) and fails on "not found",
+  browser errors, failed requests and sideways scrolling at phone width. Wide content goes in an `overflow-x-auto`
+  box; fieldsets need `min-w-0` for that to work (`Group` sets it). Add new pages to its lists.
+- Better Auth's instance is cached on `globalThis` in development: restart `pnpm dev` after changing `src/lib/auth.ts`.
 - Better Auth rate limits: built-in rules (sign-in/sign-up 3 per 10 s per IP and path, else 30/min); `/get-session` is
   exempt (served from the cookie cache; limiting it made shared IPs look logged out). Upstash adds 10 auth POSTs/min
   per IP in production.

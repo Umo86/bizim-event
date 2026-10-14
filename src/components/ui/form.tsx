@@ -89,7 +89,9 @@ export function Group({
   className?: string;
 }) {
   return (
-    <fieldset className={cn("space-y-2", className)}>
+    // min-w-0: a fieldset is otherwise as wide as its widest content, so a scrolling table
+    // inside it (the weekly prices) would widen the whole page on phones.
+    <fieldset className={cn("min-w-0 space-y-2", className)}>
       <legend className="text-sm font-semibold text-ink">{legend}</legend>
       {hint ? <p className="text-sm text-muted">{hint}</p> : null}
       {children}

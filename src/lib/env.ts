@@ -23,6 +23,8 @@ const schema = z.object({
   // Email
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().default("Bizim Event <hello@bizimevent.co.uk>"),
+  // Shown on the contact page (read at build time; see src/server/contact.ts)
+  CONTACT_EMAIL: z.string().email().optional(),
 
   // Cloudflare R2
   R2_ACCOUNT_ID: z.string().optional(),

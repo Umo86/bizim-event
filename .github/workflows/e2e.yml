@@ -1,9 +1,10 @@
 name: E2E
 
 # Real browser against `pnpm dev` and a throwaway Postgres: sign up, verify the email, log in,
-# set up a venue, a caterer and a performer, get approved, add a second listing; the seeded
-# test accounts; and billing on the local simulator (no Stripe keys). About 10–15 runner
-# minutes, so docs-only pushes skip it.
+# set up a venue, a caterer and a performer, get approved, add a second listing; changes
+# requested and resubmitted, rejection, more businesses, wizard errors; the seeded test
+# accounts; billing on the local simulator (no Stripe keys); and every page opened as a
+# visitor, customer, business owner and admin. Docs-only pushes skip it.
 
 on:
   push:
@@ -11,6 +12,9 @@ on:
     paths-ignore: ["**/*.md"]
   pull_request:
     paths-ignore: ["**/*.md"]
+  # Mondays, and when run by hand: every page in both languages (tests/e2e/pages.spec.ts).
+  schedule:
+    - cron: "23 4 * * 1"
   workflow_dispatch:
 
 concurrency:
@@ -20,7 +24,7 @@ concurrency:
 jobs:
   e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 60
     services:
       postgres:
         image: postgis/postgis:16-3.4
@@ -40,6 +44,7 @@ jobs:
       BETTER_AUTH_URL: http://localhost:3000
       NEXT_PUBLIC_APP_URL: http://localhost:3000
       NEXT_TELEMETRY_DISABLED: "1"
+      E2E_FULL_CRAWL: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '1' || '0' }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

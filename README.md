@@ -58,15 +58,22 @@ deletes it; both touch only `@bizimevent.test` accounts and what they own. Remov
 
 ```bash
 pnpm test        # unit + integration (integration needs TEST_DATABASE_URL, Postgres with PostGIS)
-pnpm test:e2e    # Playwright, against `pnpm dev` and your local database (run pnpm db:seed first)
+pnpm test:e2e    # Playwright, against `pnpm dev` and your local database (it loads the test data itself)
 ```
 
 The end-to-end tests sign up a venue (Turkish), a caterer (English) and a performer (Turkish, phone-sized screen), check
 that they can't log in before verifying their email, verify from the email, log out and back in, complete the set-up
-wizard with photo uploads, have the admin approve them, then add, submit and approve a second listing. They also log
-in with the seeded test accounts and go through billing on the simulator: choosing a plan during the trial, cancelling
-and resuming, an expired business paying again, a failed payment and its grace period, and the admin billing tools.
-Each run recreates the test data first (`E2E_RESEED=0` skips that). GitHub runs them on every push (the E2E workflow).
+wizard with photo uploads, have the admin approve them, then add, submit and approve a second listing. They also cover
+what else happens on the way in: the admin asks for changes and the owner fixes them and resubmits, a rejection, a
+customer listing a business, an owner adding a second business, the wizard's error messages and autosave, a file that
+isn't a photo, and logging in with an emailed link. Billing runs on the simulator: choosing a plan during the trial,
+cancelling and resuming, an expired business paying again, a failed payment and its grace period, and the admin tools.
+
+`tests/e2e/pages.spec.ts` opens every page as a visitor, a customer, business owners in each state and the admin — in
+English on a desktop and in Turkish on a phone — and follows every link it finds. A page fails if it isn't found, shows
+an error in the browser, has a failed request or scrolls sideways on a phone. Each run recreates the test data first
+(`E2E_RESEED=0` skips that). GitHub runs the tests on every push (the E2E workflow; the page check runs in Turkish only
+there to save time) and the full page check every Monday or when you run the workflow by hand.
 
 ## Deploy (Vercel + Neon)
 
@@ -89,7 +96,10 @@ Each run recreates the test data first (`E2E_RESEED=0` skips that). GitHub runs 
    only) or `SEED_PASSWORD=… DATABASE_URL_UNPOOLED=… pnpm db:seed` (with test data). Run the migrations again whenever
    a new one is added.
 7. Deploy. The daily cron (`/api/cron/daily`) is registered from `vercel.json`.
-8. Billing: see [Billing (Stripe)](#billing-stripe). Until Stripe is set up, approved businesses get their free trial as
+8. Make yourself an admin, so you can approve businesses: sign up on the live site and verify your email, then Actions
+   → **Database** → "make an account admin" with your email (or `DATABASE_URL_UNPOOLED=… pnpm db:make-admin you@…`).
+   Log out and back in, and the approval queue is at `/tr/admin/approvals`.
+9. Billing: see [Billing (Stripe)](#billing-stripe). Until Stripe is set up, approved businesses get their free trial as
    usual and the billing page says plans can't be bought yet.
 
 > Vercel Hobby is for non-commercial use. Build and test on Hobby, then move to Pro before Bizim Event takes its first
@@ -124,7 +134,18 @@ To switch it on (test mode first):
 for tax in Stripe. Without a Stripe key, development uses a built-in simulator — a pretend checkout, and a pretend
 portal with buttons to switch plan, cancel, resume or fail a payment — and production just runs the free trials.
 
+## Before launch
+
+1. Fill in the company details in `src/content/company.ts` (registered name, number and address) and set
+   `CONTACT_EMAIL` on Vercel to an address someone reads. Both appear on the contact and legal pages.
+2. Have a solicitor review the terms of use, business terms, privacy policy and cookie policy (`src/content/legal`).
+   They are written from how the site actually works, but they are not legal advice.
+3. Remove the test data: Actions → Database → "remove test data" (once search is live, approved test listings would be
+   public).
+4. Move Vercel to Pro and switch Stripe to live keys (see [Billing](#billing-stripe)).
+
 ## Scripts
 
 `pnpm dev` · `pnpm build` · `pnpm lint` · `pnpm typecheck` · `pnpm test` · `pnpm test:e2e` · `pnpm format` ·
-`pnpm db:generate` · `pnpm db:migrate` · `pnpm db:seed` · `pnpm db:status` · `pnpm db:studio` · `pnpm r2:cors`
+`pnpm db:generate` · `pnpm db:migrate` · `pnpm db:seed` · `pnpm db:status` · `pnpm db:make-admin` · `pnpm db:studio` ·
+`pnpm r2:cors`

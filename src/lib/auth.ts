@@ -91,7 +91,9 @@ function createAuth() {
       magicLink({
         expiresIn: 60 * 10,
         sendMagicLink: async ({ email, url }) => {
-          await sendActionEmail("magic", email, url, null);
+          // The page the link returns to (/en/…, /tr/…) says which language the person was using.
+          const back = new URL(url).searchParams.get("callbackURL") ?? "";
+          await sendActionEmail("magic", email, url, back.match(/^\/(tr|en)(?:\/|$)/)?.[1] ?? null);
         },
       }),
       organization({

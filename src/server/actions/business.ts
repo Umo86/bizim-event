@@ -10,6 +10,7 @@ import { defaultCurrencyFor, timezoneFor } from "@/lib/timezone";
 import { locationInput, type BusinessSettingsValues } from "@/lib/validation/business";
 import { sendNotice } from "@/emails/notices";
 import { businessWrite, DalError, requireUser } from "@/server/dal";
+import { refreshSessionCache } from "@/server/session";
 import { runAction, type ActionResult } from "./run";
 
 /** Step 0 — create the draft business and jump into the wizard. */
@@ -18,7 +19,11 @@ export async function createBusinessAction(type: ListingType, locale: string) {
     const u = requireUser(ctx);
     const { success } = await rateLimit("enquiry", `create-business:${u.id}`);
     if (!success) throw new DalError("CONFLICT", "rate_limited");
-    return businessWrite.createBusinessDraft(ctx, { type });
+    const created = await businessWrite.createBusinessDraft(ctx, { type });
+    // A customer has just become a business user: update the cached session now, or the
+    // account page would keep saying "customer" for up to five minutes.
+    if (u.role === "customer") await refreshSessionCache();
+    return created;
   });
   if (!result.ok) return result;
   redirect({ href: `/business/${result.data.businessId}/setup/info`, locale: isLocale(locale) ? locale : "tr" });

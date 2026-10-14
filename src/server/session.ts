@@ -37,3 +37,12 @@ export async function getDalContext(): Promise<DalContext> {
   const user = await getSessionUser();
   return { db: getDb(), user };
 }
+
+/**
+ * Re-reads the session from the database and re-issues the cached session cookie. Call it from
+ * a server action after changing something the cookie holds (such as the role), so pages see
+ * the change straight away instead of when the 5-minute cache expires.
+ */
+export async function refreshSessionCache() {
+  await getAuth().api.getSession({ headers: await headers(), query: { disableCookieCache: true } });
+}

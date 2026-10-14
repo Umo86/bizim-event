@@ -11,6 +11,9 @@ name: Database
 #
 # Test data = every account on @bizimevent.test and what it owns. "remove test data" deletes
 # exactly that and never touches real sign-ups.
+#
+# "make an account admin" gives an existing, verified account admin rights (fill in the email
+# box), so someone can approve businesses on the live site.
 
 on:
   workflow_dispatch:
@@ -25,6 +28,11 @@ on:
           - set up and add test data
           - recreate test data
           - remove test data
+          - make an account admin
+      email:
+        description: For "make an account admin" — the account's email (sign up on the site first)
+        type: string
+        required: false
 
 concurrency:
   group: database
@@ -38,6 +46,7 @@ jobs:
       DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
       SEED_PASSWORD: ${{ secrets.SEED_PASSWORD }}
       ACTION: ${{ inputs.action }}
+      ADMIN_EMAIL: ${{ inputs.email }}
     steps:
       - name: Check the secrets
         run: |
@@ -75,6 +84,9 @@ jobs:
       - name: Remove test data
         if: inputs.action == 'remove test data'
         run: pnpm db:seed --remove-demo
+      - name: Make an account admin
+        if: inputs.action == 'make an account admin'
+        run: pnpm db:make-admin "$ADMIN_EMAIL"
       - name: After
         if: inputs.action != 'check (change nothing)'
         run: pnpm db:status

@@ -23,6 +23,7 @@ type Values = z.infer<typeof schema>;
 export function AuthForm({ mode, googleEnabled }: { mode: Mode; googleEnabled: boolean }) {
   const t = useTranslations("auth");
   const tc = useTranslations("common");
+  const tv = useTranslations("validation");
   const locale = useLocale();
   const router = useRawRouter();
   const search = useSearchParams();
@@ -68,7 +69,7 @@ export function AuthForm({ mode, googleEnabled }: { mode: Mode; googleEnabled: b
 
   const sendMagicLink = async () => {
     const email = getValues("email");
-    if (!z.string().email().safeParse(email).success) return setNotice({ kind: "error", text: t("email") });
+    if (!z.string().email().safeParse(email).success) return setNotice({ kind: "error", text: tv("invalid_email") });
     const { error } = await signIn.magicLink({ email, callbackURL });
     setNotice(error ? { kind: "error", text: t("genericError") } : { kind: "ok", text: t("magicLinkSent") });
   };
@@ -141,6 +142,22 @@ export function AuthForm({ mode, googleEnabled }: { mode: Mode; googleEnabled: b
         <Button type="submit" variant="cta" className="w-full" disabled={formState.isSubmitting}>
           {mode === "sign-up" ? t("signUpButton") : t("signInButton")}
         </Button>
+        {mode === "sign-up" && (
+          <p className="text-center text-xs text-muted">
+            {t.rich("agreeTerms", {
+              terms: (chunks) => (
+                <Link href="/legal/terms" className="font-semibold text-primary-strong underline">
+                  {chunks}
+                </Link>
+              ),
+              privacy: (chunks) => (
+                <Link href="/legal/privacy" className="font-semibold text-primary-strong underline">
+                  {chunks}
+                </Link>
+              ),
+            })}
+          </p>
+        )}
       </form>
 
       {mode === "sign-in" && (

@@ -4,6 +4,7 @@
  *   pnpm db:status
  * Used by the Database workflow so a run's log shows the live database's state.
  */
+import { readFileSync } from "node:fs";
 import { config } from "dotenv";
 import { Pool } from "pg";
 
@@ -46,7 +47,12 @@ async function main() {
       `select round(pg_database_size(current_database()) / 1024.0 / 1024.0, 1)::text as mb`,
     );
 
-    console.log(`Migrations applied: ${migrations.n}`);
+    const inRepo = (JSON.parse(readFileSync("drizzle/meta/_journal.json", "utf8")) as { entries: unknown[] }).entries
+      .length;
+    console.log(`Migrations applied: ${migrations.n} of ${inRepo}`);
+    if (migrations.n < inRepo) {
+      console.log("  ✗ Some migrations haven't been applied: run pnpm db:migrate (the workflow's \"set up\").");
+    }
     console.log(
       `Reference data: ${ref.countries} countries, ${ref.cities} cities, ${ref.event_types} event types, ${ref.policies} cancellation policies, ${ref.plans} plans`,
     );
@@ -56,6 +62,11 @@ async function main() {
     console.log(
       `Accounts: ${users.total} (${users.test} test accounts on @bizimevent.test), admins: ${users.admins} (${users.real_admins} with a real email)`,
     );
+    if (!users.real_admins) {
+      console.log(
+        '  ✗ No admin with a real email, so nobody can approve businesses: sign up on the site, then run pnpm db:make-admin <email> (the workflow\'s "make an account admin").',
+      );
+    }
     console.log(
       `Businesses: ${businesses.map((b) => `${b.status} ${b.total}${b.test ? ` (${b.test} test)` : ""}`).join(", ") || "none"}`,
     );

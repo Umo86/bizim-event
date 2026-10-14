@@ -20,7 +20,9 @@ import {
  * fixes and resubmits; the admin rejects one; a customer account lists a business; an owner
  * adds a second business; the set-up wizard explains what's missing and keeps what's typed;
  * a file that isn't a photo is refused; and logging in with an email link. Seeded accounts:
- * venue13 and caterer4 are waiting for approval, venue1 is live, customer2 is a customer.
+ * venue13 and caterer4 are waiting for approval, venue11 pays, customer2 and customer5 are
+ * customers. Other specs rely on venue1's single business and newbusiness@ being empty, so
+ * this one leaves those alone.
  */
 
 // These tests change seeded accounts, so a retry (CI) starts again from fresh test data.
@@ -83,7 +85,8 @@ test("changes requested: the owner sees the note, fixes the listing, resubmits a
   const description = visible(page.locator("#description-tr"));
   await description.fill(`${await description.inputValue()} Ücretsiz otoparkımız 120 araçlıktır.`);
   await expect(visible(page.getByText(t.wizard.saved))).toBeVisible();
-  await page.goto(`/tr/business/${id}/setup/photos`);
+  // Wait for the page to hydrate: a file chosen before React is listening would be ignored.
+  await page.goto(`/tr/business/${id}/setup/photos`, { waitUntil: "networkidle" });
   await visible(page.locator("input[type=file][multiple]")).setInputFiles(await samplePhotos(page, 5, "Kristal"));
   await expect(visible(page.locator("ul li img"))).toHaveCount(5, { timeout: 120_000 });
   await page.goto(`/tr/business/${id}`);
@@ -139,7 +142,7 @@ test("a rejected business sees why", async ({ browser }) => {
 test("a customer lists a business, and an owner adds a second one", async ({ browser }) => {
   for (const { email, locale, type } of [
     { email: "customer2@bizimevent.test", locale: "tr", type: "performer" },
-    { email: "venue1@bizimevent.test", locale: "en", type: "caterer" },
+    { email: "venue11@bizimevent.test", locale: "en", type: "caterer" },
   ] as const) {
     const t = ui[locale];
     const { page, errors, close } = await openPage(browser, locale);
@@ -181,7 +184,7 @@ test("the set-up wizard says what's missing, keeps what's typed, and refuses fil
   const t = ui.en;
   const { page, errors, close } = await openPage(browser, "en");
   const main = page.getByRole("main");
-  await logIn(page, "en", "newbusiness@bizimevent.test", SEEDED_PASSWORD, "/en/account");
+  await logIn(page, "en", "customer5@bizimevent.test", SEEDED_PASSWORD, "/en/account");
   await page.goto("/en/business/start");
   await main.getByRole("button", { name: new RegExp(t.businessStart.venueTitle) }).click();
   await page.waitForURL(/\/setup\/info$/);
@@ -206,7 +209,7 @@ test("the set-up wizard says what's missing, keeps what's typed, and refuses fil
   await expect(visible(page.locator("#email"))).toHaveValue("events@gardenhall.example");
 
   // A text file dressed up as a photo is refused with a message; a real photo goes in.
-  await page.goto(`${base}/setup/photos`);
+  await page.goto(`${base}/setup/photos`, { waitUntil: "networkidle" });
   const input = visible(page.locator("input[type=file][multiple]"));
   await input.setInputFiles({ name: "menu.jpg", mimeType: "image/jpeg", buffer: Buffer.from("not really a photo") });
   await expect(visible(page.getByText(/menu\.jpg/)).first()).toBeVisible();
